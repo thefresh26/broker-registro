@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Formulario SAGRILAFT - Activos por Colombia</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif; background: #f9fafb; }
+    .step-active { background-color: #e3f2fd; border: 2px solid #2563eb; opacity: 1; }
+    .step-inactive { background-color: transparent; border: 2px solid #e5e7eb; opacity: 0.5; }
+    .step-done { background-color: #dcfce7; border: 2px solid #16a34a; opacity: 1; }
+    .icon-active { background-color: #2563eb; }
+    .icon-inactive { background-color: #9ca3af; }
+    .icon-done { background-color: #16a34a; }
+    .upload-zone { border: 2px dashed #d1d5db; transition: all 0.2s; }
+    .upload-zone:hover { border-color: #60a5fa; background: #eff6ff; }
+    .section-panel { display: none; }
+    .section-panel.active { display: block; }
+    input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    select, input[type=text], input[type=email], input[type=tel], input[type=number], input[type=date] {
+      width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px;
+      font-size: 14px; background: white; transition: border-color 0.2s;
+    }
+    select:focus, input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+    label.field-label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 4px; }
+    .btn-primary { background: #2563eb; color: white; padding: 8px 24px; border-radius: 4px; font-weight: 500; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; border: none; cursor: pointer; transition: background 0.2s; min-width: 100px; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { background: rgba(0,0,0,0.12); color: rgba(0,0,0,0.26); cursor: not-allowed; }
+    .btn-outline { background: transparent; color: #1976d2; padding: 8px 24px; border-radius: 4px; font-weight: 500; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid rgba(25,118,210,0.5); cursor: pointer; min-width: 100px; }
+    .btn-outline:disabled { color: rgba(0,0,0,0.26); border-color: rgba(0,0,0,0.12); cursor: not-allowed; }
+    .check-option { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+    .check-option:hover { border-color: #2563eb; background: #eff6ff; }
+    .radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+    .field-group { margin-bottom: 16px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    .socio-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .score-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+    .score-bar { flex: 1; height: 6px; background: #e5e7eb; border-radius: 3px; }
+    .score-fill { height: 100%; background: #2563eb; border-radius: 3px; transition: width 0.5s; }
+    .hab-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 14px; }
+    .hab-ok { background: #dcfce7; }
+    .hab-fail { background: #fee2e2; }
+    .hab-pending { background: #f3f4f6; }
+  </style>
+</head>
+<body class="antialiased">
+
+<!-- LOADING OVERLAY -->
+<div id="overlayLoading" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:12px;padding:40px;text-align:center;">
+    <div style="width:48px;height:48px;border:4px solid #e5e7eb;border-top-color:#2563eb;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;"></div>
+    <p style="font-weight:600;color:#1f2937;">Enviando formulario...</p>
+    <p style="font-size:13px;color:#6b7280;margin-top:4px;">Por favor espere...</p>
+  </div>
+</div>
+
+<!-- SUCCESS OVERLAY -->
+<div id="overlaySuccess" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:12px;padding:40px;text-align:center;max-width:420px;width:90%;">
+    <div style="font-size:48px;margin-bottom:16px;" id="successIcon">✅</div>
+    <h3 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:8px;" id="successTitle">Registro enviado</h3>
+    <p style="font-size:14px;color:#6b7280;line-height:1.6;" id="successText"></p>
+    <button class="btn-primary" style="margin-top:24px;" onclick="document.getElementById('overlaySuccess').style.display='none'">Cerrar</button>
+  </div>
+</div>
+
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+  <!-- BREADCRUMB -->
+  <div class="px-0 pt-4 pb-2">
+    <nav class="mb-2">
+      <ol class="flex items-center space-x-2 text-sm text-gray-500">
+        <li><a href="#" class="hover:text-blue-600">🏠 Inicio</a></li>
+        <li>›</li><li><a href="#" class="hover:text-blue-600">Formulario General</a></li>
+        <li>›</li><li class="text-gray-700 font-medium">Verificación de SAGRILAFT</li>
+      </ol>
+    </nav>
+    <h1 class="text-2xl font-bold text-gray-800 mb-2">Verificación de SAGRILAFT</h1>
+  </div>
+
+  <div class="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+    <p class="text-sm text-gray-700">Formulario SAGRILAFT para persona natural o jurídica, destinado a verificar cumplimiento normativo, validar la trazabilidad del interesado y asegurar la debida diligencia del proceso.</p>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://activosporcolombia.com/tramites/Img/Imagen_sagrilaft.jpg" alt="SAGRILAFT" class="w-full h-auto rounded-lg shadow-sm" onerror="this.style.display='none'"/>
+  </div>
+
+  <form id="mainForm" class="space-y-6">
+
+    <!-- TIPO DE PERSONA -->
+    <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Tipo de Persona</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <label class="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" id="labelNatural">
+          <input type="radio" name="tipoPersona" value="natural" class="mr-3 text-blue-600" checked onchange="setTipo('natural')"/>
+          <div><div class="font-medium text-gray-900">Persona Natural</div><div class="text-sm text-gray-600">Registro individual</div></div>
+        </label>
+        <label class="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors" id="labelJuridica">
+          <input type="radio" name="tipoPersona" value="juridica" class="mr-3 text-blue-600" onchange="setTipo('juridica')"/>
+          <div><div class="font-medium text-gray-900">Persona Jurídica</div><div class="text-sm text-gray-600">Registro empresarial</div></div>
+        </label>
+      </div>
+    </div>
+
+    <!-- ALERTA DOCUMENTOS -->
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <div class="flex items-start text-sm">
+        <svg class="h-5 w-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        <div>
+          <h3 class="font-semibold text-amber-800 mb-2">Documentos Requeridos para el Registro</h3>
+          <div id="alertaNatural" class="text-amber-700">
+            <p class="mb-2 font-medium">Para <strong>Persona Natural</strong>:</p>
+            <ul class="list-disc list-inside space-y-1 ml-2">
+              <li><strong>RUT</strong> — PDF</li><li><strong>Cédula de Ciudadanía</strong> — PDF</li><li><strong>Declaración de Renta</strong> — si aplica</li>
+            </ul>
+          </div>
+          <div id="alertaJuridica" class="text-amber-700" style="display:none;">
+            <p class="mb-2 font-medium">Para <strong>Persona Jurídica</strong>:</p>
+            <ul class="list-disc list-inside space-y-1 ml-2">
+              <li><strong>RUT de la Empresa</strong> — PDF</li><li><strong>Cédula del Representante Legal</strong> — PDF</li>
+              <li><strong>Certificado de Composición Accionaria</strong> — PDF</li><li><strong>Cámara de Comercio</strong> — vigente</li>
+              <li><strong>Declaración de Renta Empresa</strong> — PDF</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEPPER DESKTOP -->
+    <div id="stepperDesktop" class="hidden md:block w-full mb-8"></div>
+    <!-- STEPPER MOBILE -->
+    <div id="stepperMobile" class="md:hidden overflow-x-auto pb-2 mb-4"></div>
+    <!-- PASO COUNTER -->
+    <div class="flex justify-center"><p class="text-sm text-gray-600 font-medium">Paso <span id="pasoActual">1</span> de <span id="pasoTotal">9</span></p></div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         FORMULARIO PERSONA NATURAL
+    ═══════════════════════════════════════════════════════ -->
+    <div id="formNatural">
+
+      <!-- PASO N1: CARGA DOCUMENTOS -->
+      <div class="section-panel active bg-gray-50 p-6 rounded-lg" id="N-step-0">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">1</span>
+          Carga de Documentos
+        </h3>
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 class="font-semibold text-blue-900 mb-3">Información Previa</h4>
+          <div class="field-group">
+            <label class="field-label">¿Declara Renta? *</label>
+            <select name="n_declaraRenta" class="w-full p-3 border border-gray-300 rounded-lg bg-white">
+              <option value="">Seleccione una opción</option>
+              <option value="Sí">Sí</option><option value="No">No</option>
+            </select>
+          </div>
+          <h4 class="font-semibold text-blue-900 mb-2">📄 Documentos Requeridos:</h4>
+          <ul class="list-disc list-inside text-blue-800 space-y-1">
+            <li>RUT (Registro Único Tributario) en formato PDF *</li>
+            <li>Cédula de Ciudadanía escaneada en formato PDF *</li>
+          </ul>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label class="field-label">RUT Escaneado (PDF) * <span class="text-gray-400 font-normal">50MB</span></label>
+            <div class="relative upload-zone rounded-lg p-4 text-center bg-white">
+              <input type="file" name="n_rut" accept=".pdf" onchange="showFileName(this,'n_rut_name')"/>
+              <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8zm2 16H8v-2h8zm0-4H8v-2h8zm-3-5V3.5L18.5 9z"/></svg>
+              <p class="text-sm text-gray-600" id="n_rut_name">Subir documento</p>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Cédula Escaneada (PDF) * <span class="text-gray-400 font-normal">50MB</span></label>
+            <div class="relative upload-zone rounded-lg p-4 text-center bg-white">
+              <input type="file" name="n_cedula" accept=".pdf" onchange="showFileName(this,'n_cedula_name')"/>
+              <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8zm2 16H8v-2h8zm0-4H8v-2h8zm-3-5V3.5L18.5 9z"/></svg>
+              <p class="text-sm text-gray-600" id="n_cedula_name">Subir documento</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO N2: IDENTIFICACIÓN -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="N-step-1">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">2</span>Identificación
+        </h3>
+        <div class="grid-2">
+          <div class="field-group"><label class="field-label">Primer Apellido *</label><input type="text" name="n_primerApellido" placeholder="Primer apellido"/></div>
+          <div class="field-group"><label class="field-label">Segundo Apellido</label><input type="text" name="n_segundoApellido" placeholder="Segundo apellido"/></div>
+          <div class="field-group"><label class="field-label">Nombres *</label><input type="text" name="n_nombres" placeholder="Nombres completos"/></div>
+          <div class="field-group"><label class="field-label">Lugar de Nacimiento *</label><input type="text" name="n_lugarNacimiento" placeholder="Ciudad de nacimiento"/></div>
+          <div class="field-group"><label class="field-label">País de Nacimiento *</label><input type="text" name="n_paisNacimiento" placeholder="País" value="Colombia"/></div>
+          <div class="field-group"><label class="field-label">Fecha de Nacimiento *</label><input type="date" name="n_fechaNacimiento"/></div>
+          <div class="field-group"><label class="field-label">Tipo de Documento *</label>
+            <select name="n_tipoDoc"><option value="">Seleccione...</option><option>T.I.</option><option>P.P.</option><option>C.C.</option><option>C.E.</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Número de Documento *</label><input type="text" name="n_numDoc" placeholder="Número de identificación"/></div>
+          <div class="field-group"><label class="field-label">Fecha Expedición del Documento *</label><input type="date" name="n_fechaExpedicion"/></div>
+          <div class="field-group"><label class="field-label">Ocupación *</label><input type="text" name="n_ocupacion" placeholder="Ej: Comerciante, Empleado"/></div>
+          <div class="field-group"><label class="field-label">Nacionalidad *</label><input type="text" name="n_nacionalidad" placeholder="Nacionalidad" value="Colombiana"/></div>
+          <div class="field-group"><label class="field-label">Ciudad *</label><input type="text" name="n_ciudad" placeholder="Ciudad de residencia"/></div>
+          <div class="field-group col-span-2"><label class="field-label">Dirección de Residencia *</label><input type="text" name="n_direccion" placeholder="Dirección completa"/></div>
+          <div class="field-group"><label class="field-label">Estado Civil *</label>
+            <select name="n_estadoCivil"><option value="">Seleccione...</option><option>Soltero</option><option>Casado</option><option>Divorciado</option><option>Unión Libre</option><option>Viudo</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Sexo *</label>
+            <select name="n_sexo"><option value="">Seleccione...</option><option>Masculino</option><option>Femenino</option><option>Otro</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Nivel de Estudios *</label>
+            <select name="n_nivelEstudios"><option value="">Seleccione...</option><option value="primaria">Primaria</option><option value="secundaria">Secundaria</option><option value="tecnico">Técnico</option><option value="tecnologo">Tecnólogo</option><option value="profesional">Profesional</option><option value="especializacion">Especialización</option><option value="maestria">Maestría</option><option value="doctorado">Doctorado</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Teléfono de Residencia</label><input type="tel" name="n_telResidencia" placeholder="Ej: 6012345678"/></div>
+          <div class="field-group"><label class="field-label">Teléfono Móvil *</label><input type="tel" name="n_telMovil" placeholder="Ej: 3001234567"/></div>
+          <div class="field-group"><label class="field-label">Email *</label><input type="email" name="n_email" placeholder="correo@ejemplo.com"/></div>
+        </div>
+      </div>
+
+      <!-- PASO N3: CÓNYUGE -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="N-step-2">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">3</span>Información del Cónyuge
+        </h3>
+        <div class="field-group">
+          <label class="field-label">¿Tiene cónyuge? *</label>
+          <div class="flex gap-6 mt-2">
+            <label class="radio-label"><input type="radio" name="n_tieneConyuge" value="Sí" onchange="toggleSection('n_conyugeFields',true)"/> Sí</label>
+            <label class="radio-label"><input type="radio" name="n_tieneConyuge" value="No" onchange="toggleSection('n_conyugeFields',false)" checked/> No</label>
+          </div>
+        </div>
+        <div id="n_conyugeFields" style="display:none;" class="mt-4">
+          <div class="grid-2">
+            <div class="field-group"><label class="field-label">Nombres del Cónyuge *</label><input type="text" name="n_conyugeNombres" placeholder="Nombres completos"/></div>
+            <div class="field-group"><label class="field-label">Apellidos del Cónyuge *</label><input type="text" name="n_conyugeApellidos" placeholder="Apellidos completos"/></div>
+            <div class="field-group"><label class="field-label">Tipo de Documento *</label>
+              <select name="n_conyugeTipoDoc"><option value="">Seleccione...</option><option>C.C.</option><option>C.E.</option><option>P.P.</option></select>
+            </div>
+            <div class="field-group"><label class="field-label">Número de Documento *</label><input type="text" name="n_conyugeNumDoc" placeholder="Número de identificación"/></div>
+            <div class="field-group"><label class="field-label">Ocupación</label><input type="text" name="n_conyugeOcupacion" placeholder="Ocupación del cónyuge"/></div>
+            <div class="field-group"><label class="field-label">Teléfono</label><input type="tel" name="n_conyugeTel" placeholder="Número de contacto"/></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO N4: ACTIVIDAD ECONÓMICA -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="N-step-3">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">4</span>Actividad Económica
+        </h3>
+        <div class="field-group">
+          <label class="field-label">Actividad Principal *</label>
+          <select name="n_actividadPrincipal" onchange="toggleActividadFields(this.value)">
+            <option value="">Seleccione...</option>
+            <option value="ama_casa">Ama de casa</option><option value="comerciante">Comerciante</option>
+            <option value="empleado">Empleado</option><option value="estudiante">Estudiante</option>
+            <option value="independiente">Independiente</option><option value="militar">Militar</option>
+            <option value="pensionado">Pensionado</option><option value="rentista">Rentista</option>
+            <option value="servidor_publico">Servidor público</option><option value="otro">Otro</option>
+          </select>
+        </div>
+
+        <!-- Empleado -->
+        <div id="camposEmpleado" style="display:none;" class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+          <p class="text-sm font-semibold text-blue-800 mb-3">Información de Empleo</p>
+          <div class="grid-2">
+            <div class="field-group"><label class="field-label">Empresa donde trabaja</label><input type="text" name="n_empresa" placeholder="Nombre de la empresa"/></div>
+            <div class="field-group"><label class="field-label">Dirección de la empresa</label><input type="text" name="n_dirEmpresa" placeholder="Dirección"/></div>
+            <div class="field-group"><label class="field-label">Teléfono de la empresa</label><input type="tel" name="n_telEmpresa" placeholder="Teléfono"/></div>
+            <div class="field-group"><label class="field-label">Tipo de entidad</label>
+              <select name="n_tipoEntidadEmp"><option value="">Seleccione...</option><option>Pública</option><option>Privada</option><option>Mixta</option></select>
+            </div>
+            <div class="field-group"><label class="field-label">Cargo Actual</label><input type="text" name="n_cargoActual" placeholder="Cargo que desempeña"/></div>
+            <div class="field-group"><label class="field-label">Tipo de contrato</label>
+              <select name="n_tipoContrato"><option value="">Seleccione...</option><option>Indefinido</option><option>Libre NyR</option><option>Obra Labor</option><option>Fijo</option><option>Provisional</option><option>Prestación de SS</option><option>Carrera Admin.</option></select>
+            </div>
+            <div class="field-group"><label class="field-label">Tipo de vinculación</label>
+              <select name="n_tipoVinculacion"><option value="">Seleccione...</option><option>Directa</option><option>Temporal</option></select>
+            </div>
+            <div class="field-group"><label class="field-label">Antigüedad (meses)</label><input type="number" name="n_antiguedad" min="0" placeholder="Ej: 24"/></div>
+          </div>
+        </div>
+
+        <!-- Comerciante/Independiente -->
+        <div id="camposComercio" style="display:none;" class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+          <p class="text-sm font-semibold text-blue-800 mb-3">Información de Negocio</p>
+          <div class="grid-2">
+            <div class="field-group"><label class="field-label">CIIU principal</label><input type="text" name="n_ciiu" placeholder="Ej: 6612"/></div>
+            <div class="field-group"><label class="field-label">Actividad Secundaria</label><input type="text" name="n_actSecundaria" placeholder="Actividad secundaria"/></div>
+            <div class="field-group"><label class="field-label">Dirección del negocio</label><input type="text" name="n_dirNegocio" placeholder="Dirección"/></div>
+            <div class="field-group"><label class="field-label">Ciudad del negocio</label><input type="text" name="n_ciudadNegocio" placeholder="Ciudad"/></div>
+            <div class="field-group"><label class="field-label">Teléfono del negocio</label><input type="tel" name="n_telNegocio" placeholder="Teléfono"/></div>
+            <div class="field-group"><label class="field-label">¿Qué tipo de producto comercializa?</label><input type="text" name="n_productoComercializa" placeholder="Describe el producto"/></div>
+            <div class="field-group"><label class="field-label">¿Cuenta con establecimiento de comercio?</label>
+              <select name="n_tieneEstablecimiento"><option value="">Seleccione...</option><option>Sí</option><option>No</option></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="field-label mb-2">Sectores de Actividad Económica</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="check-option"><input type="checkbox" name="n_sector" value="Comercial"/> Comercial</label>
+            <label class="check-option"><input type="checkbox" name="n_sector" value="Construcción"/> Construcción</label>
+            <label class="check-option"><input type="checkbox" name="n_sector" value="Financiero"/> Financiero</label>
+            <label class="check-option"><input type="checkbox" name="n_sector" value="Industrial"/> Industrial</label>
+            <label class="check-option"><input type="checkbox" name="n_sector" value="Servicios"/> Servicios</label>
+            <label class="check-option"><input type="checkbox" name="n_sector" value="Transporte"/> Transporte</label>
+            <label class="check-option"><input type="checkbox" name="n_sector" value="Otro"/> Otro</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO N5: INFORMACIÓN FINANCIERA -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="N-step-4">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">5</span>Información Financiera
+        </h3>
+        <div class="grid-2">
+          <div>
+            <p class="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b">Ingresos Mensuales</p>
+            <div class="field-group"><label class="field-label">Salario / Pensión</label><input type="number" name="n_salario" min="0" placeholder="$ 0"/></div>
+            <div class="field-group"><label class="field-label">Comisiones</label><input type="number" name="n_comisiones" min="0" placeholder="$ 0"/></div>
+            <div class="field-group"><label class="field-label">Honorarios</label><input type="number" name="n_honorarios" min="0" placeholder="$ 0"/></div>
+            <div class="field-group"><label class="field-label">Ingreso por Arriendo</label><input type="number" name="n_ingArriendo" min="0" placeholder="$ 0"/></div>
+            <div class="field-group"><label class="field-label">Otras Actividades</label><input type="number" name="n_otrasActividades" min="0" placeholder="$ 0"/></div>
+            <div class="field-group"><label class="field-label">Total Ingresos *</label><input type="number" name="n_totalIngresos" min="0" placeholder="$ 0"/></div>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b">Egresos Mensuales</p>
+            <div class="field-group"><label class="field-label">Arriendo</label><input type="number" name="n_egresoArriendo" min="0" placeholder="$ 0"/></div>
+            <div class="field-group"><label class="field-label">Gastos Familiares</label><input type="number" name="n_gastosFamiliares" min="0" placeholder="$ 0"/></div>
+            <div class="field-group"><label class="field-label">Otras Actividades</label><input type="number" name="n_otrosEgresos" min="0" placeholder="$ 0"/></div>
+            <div class="field-group"><label class="field-label">Total Egresos *</label><input type="number" name="n_totalEgresos" min="0" placeholder="$ 0"/></div>
+          </div>
+        </div>
+        <div class="grid-3 mt-4">
+          <div class="field-group"><label class="field-label">Activos *</label><input type="number" name="n_activos" min="0" placeholder="$ 0"/></div>
+          <div class="field-group"><label class="field-label">Pasivos *</label><input type="number" name="n_pasivos" min="0" placeholder="$ 0"/></div>
+          <div class="field-group"><label class="field-label">Patrimonio</label><input type="number" name="n_patrimonio" min="0" placeholder="$ 0"/></div>
+        </div>
+        <div class="field-group mt-2">
+          <label class="field-label">¿Declara Renta? *</label>
+          <div class="flex gap-6 mt-2">
+            <label class="radio-label"><input type="radio" name="n_declaraRenta2" value="Sí"/> Sí</label>
+            <label class="radio-label"><input type="radio" name="n_declaraRenta2" value="No" checked/> No</label>
+          </div>
+        </div>
+        <!-- Años de experiencia para GCOM-FT009 -->
+        <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p class="text-sm font-semibold text-yellow-800 mb-3">📊 Datos para evaluación GCOM-FT009</p>
+          <div class="grid-2">
+            <div class="field-group"><label class="field-label">Años de experiencia comercial *</label><input type="number" id="n_aniosExp" name="n_aniosExp" min="0" max="60" placeholder="Ej: 8"/></div>
+            <div class="field-group"><label class="field-label">Negocios cerrados (último año) *</label><input type="number" id="n_negociosCerrados" name="n_negociosCerrados" min="0" placeholder="Ej: 12"/></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO N6: OPERACIONES INTERNACIONALES -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="N-step-5">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-content mr-3 text-sm font-bold">6</span>Operaciones Internacionales
+        </h3>
+        <div class="space-y-4">
+          <div class="field-group">
+            <label class="field-label">¿Realiza operaciones en moneda extranjera? *</label>
+            <div class="flex gap-6 mt-2">
+              <label class="radio-label"><input type="radio" name="n_opMonedaExt" value="Sí"/> Sí</label>
+              <label class="radio-label"><input type="radio" name="n_opMonedaExt" value="No" checked/> No</label>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Tipo de Operación *</label>
+            <select name="n_tipoOperacion"><option value="">Seleccione...</option><option>Ingreso</option><option>Egreso</option><option>Ninguna</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Tipo de Producto *</label>
+            <select name="n_tipoProducto"><option value="">Seleccione...</option><option>Exportaciones</option><option>Importaciones</option><option>Inversiones</option><option>Transferencias</option><option>Otro</option><option>Ninguna</option></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">¿Tiene productos financieros en el exterior? *</label>
+            <div class="flex gap-6 mt-2">
+              <label class="radio-label"><input type="radio" name="n_prodFinExt" value="Sí"/> Sí</label>
+              <label class="radio-label"><input type="radio" name="n_prodFinExt" value="No" checked/> No</label>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">¿Tiene cuentas en moneda extranjera? *</label>
+            <div class="flex gap-6 mt-2">
+              <label class="radio-label"><input type="radio" name="n_cuentaMonedaExt" value="Sí"/> Sí</label>
+              <label class="radio-label"><input type="radio" name="n_cuentaMonedaExt" value="No" checked/> No</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO N7: PPE -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="N-step-6">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">7</span>Persona Políticamente Expuesta (PPE)
+        </h3>
+        <div class="space-y-4">
+          <!-- 10 preguntas PPE -->
+          <script>
+            const ppePreguntasN = [
+              '¿Es usted una Persona Expuesta Políticamente (PEP)?',
+              '¿Tiene familiares que sean PEP?',
+              '¿Tiene reconocimiento público?',
+              '¿Pertenece a una organización internacional?',
+              '¿Ejerce funciones públicas en el extranjero?',
+              '¿Ocupa cargo en entidad del estado?',
+              '¿Administra recursos públicos?',
+              '¿Contrata con el estado?',
+              '¿Es exintegrante de grupos armados?',
+              '¿Tiene familiares en la SAE?'
+            ];
+            document.write(ppePreguntasN.map((q, i) => `
+              <div class="field-group">
+                <label class="field-label">${q}</label>
+                <div class="flex gap-6 mt-2">
+                  <label class="radio-label"><input type="radio" name="n_ppe_${i}" value="Sí"/> Sí</label>
+                  <label class="radio-label"><input type="radio" name="n_ppe_${i}" value="No" checked/> No</label>
+                </div>
+              </div>`).join(''));
+          </script>
+        </div>
+      </div>
+
+      <!-- PASO N8: ORIGEN DE FONDOS -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="N-step-7">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">8</span>Declaración de Origen de Fondos
+        </h3>
+        <p class="text-sm text-gray-600 mb-4">Declaro que los recursos que utilizo provienen de actividades lícitas. Seleccione las fuentes aplicables:</p>
+        <p class="text-sm font-semibold text-gray-700 mb-2">Fuentes de recursos:</p>
+        <div class="flex flex-wrap gap-2 mb-4">
+          <label class="check-option"><input type="checkbox" name="n_fuente" value="Capitalización"/> Capitalización y parte de socios</label>
+          <label class="check-option"><input type="checkbox" name="n_fuente" value="Actividad económica"/> Desarrollo de actividad económica</label>
+          <label class="check-option"><input type="checkbox" name="n_fuente" value="Dividendos"/> Dividendos y participación</label>
+          <label class="check-option"><input type="checkbox" name="n_fuente" value="Préstamo financiero"/> Préstamo entidad financiera</label>
+          <label class="check-option"><input type="checkbox" name="n_fuente" value="Rendimiento inversión"/> Rendimiento por inversión</label>
+          <label class="check-option"><input type="checkbox" name="n_fuente" value="Utilidad negocios"/> Utilidad de negocios</label>
+          <label class="check-option"><input type="checkbox" name="n_fuente" value="Venta bienes muebles"/> Venta de bienes muebles</label>
+          <label class="check-option"><input type="checkbox" name="n_fuente" value="Venta inmueble"/> Venta de inmueble</label>
+          <label class="check-option"><input type="checkbox" name="n_fuente" value="Otro"/> Otro</label>
+        </div>
+        <p class="text-sm font-semibold text-gray-700 mb-2">Arrendamientos de:</p>
+        <div class="flex flex-wrap gap-2">
+          <label class="check-option"><input type="checkbox" name="n_arriendo" value="Inmuebles"/> Inmuebles</label>
+          <label class="check-option"><input type="checkbox" name="n_arriendo" value="Apartamento"/> Apartamento</label>
+          <label class="check-option"><input type="checkbox" name="n_arriendo" value="Local"/> Local</label>
+          <label class="check-option"><input type="checkbox" name="n_arriendo" value="Casa"/> Casa</label>
+          <label class="check-option"><input type="checkbox" name="n_arriendo" value="Oficina"/> Oficina</label>
+          <label class="check-option"><input type="checkbox" name="n_arriendo" value="Muebles"/> Muebles</label>
+          <label class="check-option"><input type="checkbox" name="n_arriendo" value="Vehículo"/> Vehículo</label>
+          <label class="check-option"><input type="checkbox" name="n_arriendo" value="Otro"/> Otro</label>
+        </div>
+      </div>
+
+      <!-- PASO N9: DECLARACIONES Y AUTORIZACIÓN -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="N-step-8">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">9</span>Declaraciones y Autorización
+        </h3>
+
+        <p class="text-sm text-gray-600 mb-4">Declaro que los datos suministrados son veraces, que los recursos provienen de actividades lícitas y que no me encuentro incluido en listas restrictivas relacionadas con LAFT.</p>
+
+        <div class="field-group">
+          <label class="check-option cursor-pointer">
+            <input type="checkbox" id="n_aceptaTerminos" required/>
+            <span class="text-sm text-gray-700">Acepto y autorizo el tratamiento de mis datos personales y el proceso de consulta y estudio conforme a lo aquí indicado. <span class="text-red-500">*</span></span>
+          </label>
+        </div>
+        <div class="mt-4 p-3 bg-gray-100 rounded-lg text-center text-sm text-gray-500">
+          🔒 Verificación de Seguridad reCAPTCHA (se activará al enviar)
+        </div>
+      </div>
+
+    </div><!-- /formNatural -->
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         FORMULARIO PERSONA JURÍDICA
+    ═══════════════════════════════════════════════════════ -->
+    <div id="formJuridica" style="display:none;">
+
+      <!-- PASO J1: CARGA DOCUMENTOS -->
+      <div class="section-panel active bg-gray-50 p-6 rounded-lg" id="J-step-0">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">1</span>Carga de Documentos
+        </h3>
+        <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="field-group">
+            <label class="field-label">¿La empresa declara Renta? *</label>
+            <select name="j_declaraRenta" class="w-full p-3 border border-gray-300 rounded-lg bg-white">
+              <option value="">Seleccione una opción</option><option value="Sí">Sí</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label class="field-label">RUT de la Empresa (PDF) * <span class="text-gray-400 font-normal">50MB</span></label>
+            <div class="relative upload-zone rounded-lg p-4 text-center bg-white">
+              <input type="file" name="j_rut" accept=".pdf" onchange="showFileName(this,'j_rut_name')"/>
+              <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8zm2 16H8v-2h8zm0-4H8v-2h8zm-3-5V3.5L18.5 9z"/></svg>
+              <p class="text-sm text-gray-600" id="j_rut_name">Subir documento</p>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Cédula del Representante Legal (PDF) * <span class="text-gray-400 font-normal">50MB</span></label>
+            <div class="relative upload-zone rounded-lg p-4 text-center bg-white">
+              <input type="file" name="j_cedulaRL" accept=".pdf" onchange="showFileName(this,'j_cedulaRL_name')"/>
+              <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8zm2 16H8v-2h8zm0-4H8v-2h8zm-3-5V3.5L18.5 9z"/></svg>
+              <p class="text-sm text-gray-600" id="j_cedulaRL_name">Subir documento</p>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Certificado Composición Accionaria (PDF) * <span class="text-gray-400 font-normal">50MB</span></label>
+            <div class="relative upload-zone rounded-lg p-4 text-center bg-white">
+              <input type="file" name="j_compAccionaria" accept=".pdf" onchange="showFileName(this,'j_compAccionaria_name')"/>
+              <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8zm2 16H8v-2h8zm0-4H8v-2h8zm-3-5V3.5L18.5 9z"/></svg>
+              <p class="text-sm text-gray-600" id="j_compAccionaria_name">Subir documento</p>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Cámara de Comercio (PDF) * <span class="text-gray-400 font-normal">50MB</span></label>
+            <div class="relative upload-zone rounded-lg p-4 text-center bg-white">
+              <input type="file" name="j_camaraComercio" accept=".pdf" onchange="showFileName(this,'j_camaraComercio_name')"/>
+              <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8zm2 16H8v-2h8zm0-4H8v-2h8zm-3-5V3.5L18.5 9z"/></svg>
+              <p class="text-sm text-gray-600" id="j_camaraComercio_name">Subir documento</p>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Declaración de Renta Empresa (PDF) * <span class="text-gray-400 font-normal">50MB</span></label>
+            <div class="relative upload-zone rounded-lg p-4 text-center bg-white">
+              <input type="file" name="j_declRenta" accept=".pdf" onchange="showFileName(this,'j_declRenta_name')"/>
+              <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8zm2 16H8v-2h8zm0-4H8v-2h8zm-3-5V3.5L18.5 9z"/></svg>
+              <p class="text-sm text-gray-600" id="j_declRenta_name">Subir documento</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO J2: IDENTIFICACIÓN EMPRESA -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="J-step-1">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">2</span>Identificación de la Empresa
+        </h3>
+        <div class="grid-2">
+          <div class="field-group col-span-2"><label class="field-label">Razón Social *</label><input type="text" name="j_razonSocial" placeholder="Nombre completo de la empresa"/></div>
+          <div class="field-group"><label class="field-label">NIT *</label><input type="text" name="j_nit" placeholder="Ej: 900123456"/></div>
+          <div class="field-group"><label class="field-label">DV</label><input type="text" name="j_dv" placeholder="Dígito de verificación" maxlength="1"/></div>
+          <div class="field-group"><label class="field-label">Email *</label><input type="email" name="j_email" placeholder="contacto@empresa.com"/></div>
+          <div class="field-group"><label class="field-label">Tipo de Empresa *</label>
+            <select name="j_tipoEmpresa"><option value="">Seleccione...</option><option>Pública</option><option>Privada</option><option>Mixta</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Fecha de Constitución *</label><input type="date" name="j_fechaConstitucion"/></div>
+          <div class="field-group"><label class="field-label">País de Constitución *</label><input type="text" name="j_paisConstitucion" value="Colombia"/></div>
+          <div class="field-group"><label class="field-label">Actividad Económica *</label>
+            <select name="j_actividadEconomica"><option value="">Seleccione...</option><option>Agricultura</option><option>Industria</option><option>Comercio</option><option>Servicios</option><option>Construcción</option><option>Tecnología</option><option>Otro</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Código CIIU *</label><input type="text" name="j_ciiu" placeholder="Ej: 6612"/></div>
+          <div class="field-group col-span-2"><label class="field-label">Descripción Actividad Económica</label><input type="text" name="j_descActividad" placeholder="Descripción de la actividad"/></div>
+          <div class="field-group"><label class="field-label">Dirección Oficina Principal *</label><input type="text" name="j_direccion" placeholder="Dirección principal"/></div>
+          <div class="field-group"><label class="field-label">Ciudad *</label><input type="text" name="j_ciudad" placeholder="Ciudad"/></div>
+          <div class="field-group"><label class="field-label">Departamento *</label><input type="text" name="j_departamento" placeholder="Departamento"/></div>
+          <div class="field-group"><label class="field-label">Dirección Sucursal/Agencia</label><input type="text" name="j_dirSucursal" placeholder="Dirección sucursal"/></div>
+          <div class="field-group"><label class="field-label">Ciudad Sucursal</label><input type="text" name="j_ciudadSucursal" placeholder="Ciudad sucursal"/></div>
+          <div class="field-group"><label class="field-label">Teléfono Móvil *</label><input type="tel" name="j_telMovil" placeholder="Ej: 3001234567"/></div>
+          <div class="field-group"><label class="field-label">Teléfono Fijo</label><input type="tel" name="j_telFijo" placeholder="Ej: 6012345678"/></div>
+          <div class="field-group"><label class="field-label">Número de Empleados *</label><input type="number" name="j_numEmpleados" min="1" placeholder="Ej: 25"/></div>
+          <div class="field-group"><label class="field-label">Retención en la Fuente</label>
+            <select name="j_retencion"><option value="">Seleccione...</option><option>No retiene</option><option>Retiene</option><option>Autorretenedor</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Obligaciones Financieras</label>
+            <select name="j_obligFinancieras"><option value="">Seleccione...</option><option>No</option><option>Sí</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">¿Tiene revisor fiscal?</label>
+            <select name="j_revisorFiscal"><option value="">Seleccione...</option><option>No</option><option>Sí</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">¿Vigilado como emisor/receptor de acciones cotizadas en bolsa? *</label>
+            <select name="j_cotizadoBolsa"><option value="">Seleccione...</option><option>SI</option><option>NO</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">¿Es entidad financiera extranjera? *</label>
+            <select name="j_entidadFinExt"><option value="">Seleccione...</option><option>SI</option><option>NO</option></select>
+          </div>
+        </div>
+        <div class="mt-4">
+          <label class="field-label mb-2">Tipo de entidad *</label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <script>
+              const tiposEntidad = ['Conjuntos residenciales','Cooperativas','Corporaciones y asociaciones','Empresa de servicios públicos domiciliarios','Empresa industrial y comercial del estado','Empresas sociales del estado','Entidades financieras','Entidades religiosas no católicas','Establecimiento público','Fondos de empleados','Fondos de inversión','Fundaciones','Personas jurídicas de derecho canónico','Precooperativas','Sindicatos','Sociedades de economía mixta','Unidades administrativas especiales del estado'];
+              document.write(tiposEntidad.map(t => `<label class="radio-label text-xs"><input type="radio" name="j_tipoEntidad" value="${t}"/> ${t}</label>`).join(''));
+            </script>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO J3: REPRESENTANTE LEGAL -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="J-step-2">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">3</span>Representante Legal
+        </h3>
+        <div class="grid-2">
+          <div class="field-group"><label class="field-label">Nombres *</label><input type="text" name="j_rlNombres" placeholder="Nombres completos"/></div>
+          <div class="field-group"><label class="field-label">Apellidos *</label><input type="text" name="j_rlApellidos" placeholder="Apellidos completos"/></div>
+          <div class="field-group"><label class="field-label">Tipo de Documento *</label>
+            <select name="j_rlTipoDoc"><option value="">Seleccione...</option><option>Cédula de Ciudadanía</option><option>Cédula de Extranjería</option><option>Pasaporte</option><option>NIT</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Número de Documento *</label><input type="text" name="j_rlNumDoc" placeholder="Número de identificación"/></div>
+          <div class="field-group"><label class="field-label">Fecha de Expedición *</label><input type="date" name="j_rlFechaExp"/></div>
+          <div class="field-group"><label class="field-label">Lugar de Expedición *</label><input type="text" name="j_rlLugarExp" placeholder="Ciudad de expedición"/></div>
+          <div class="field-group"><label class="field-label">Fecha de Nacimiento *</label><input type="date" name="j_rlFechaNac"/></div>
+          <div class="field-group"><label class="field-label">Lugar de Nacimiento *</label><input type="text" name="j_rlLugarNac" placeholder="Ciudad de nacimiento"/></div>
+          <div class="field-group"><label class="field-label">Sexo *</label>
+            <select name="j_rlSexo"><option value="">Seleccione...</option><option>Masculino</option><option>Femenino</option><option>Otro</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Nacionalidad *</label><input type="text" name="j_rlNacionalidad" value="Colombiana"/></div>
+          <div class="field-group"><label class="field-label">Nivel de Estudios *</label>
+            <select name="j_rlNivelEstudios"><option value="">Seleccione...</option><option value="primaria">Primaria</option><option value="secundaria">Secundaria</option><option value="tecnico">Técnico</option><option value="tecnologo">Tecnólogo</option><option value="profesional">Profesional</option><option value="especializacion">Especialización</option><option value="maestria">Maestría</option><option value="doctorado">Doctorado</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Estado Civil *</label>
+            <select name="j_rlEstadoCivil"><option value="">Seleccione...</option><option>Soltero</option><option>Casado</option><option>Divorciado</option><option>Viudo</option><option>Unión Libre</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Tipo de Vivienda *</label>
+            <select name="j_rlTipoVivienda"><option value="">Seleccione...</option><option>Propia</option><option>Arrendada</option><option>Familiar</option><option>Otro</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Email *</label><input type="email" name="j_rlEmail" placeholder="correo@ejemplo.com"/></div>
+          <div class="field-group"><label class="field-label">Teléfono Celular *</label><input type="tel" name="j_rlTelCelular" placeholder="Ej: 3001234567"/></div>
+          <div class="field-group"><label class="field-label">Teléfono Fijo</label><input type="tel" name="j_rlTelFijo" placeholder="Ej: 6012345678"/></div>
+          <div class="field-group col-span-2"><label class="field-label">Dirección de Residencia *</label><input type="text" name="j_rlDireccion" placeholder="Dirección completa"/></div>
+          <div class="field-group"><label class="field-label">Ocupación *</label><input type="text" name="j_rlOcupacion" placeholder="Ocupación actual"/></div>
+          <div class="field-group"><label class="field-label">Empresa donde Trabaja</label><input type="text" name="j_rlEmpresa" placeholder="Nombre de la empresa"/></div>
+        </div>
+      </div>
+
+      <!-- PASO J4: CÓNYUGE RL -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="J-step-3">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">4</span>Información del Cónyuge (del Representante Legal)
+        </h3>
+        <div class="field-group">
+          <label class="field-label">¿Tiene cónyuge? *</label>
+          <div class="flex gap-6 mt-2">
+            <label class="radio-label"><input type="radio" name="j_tieneConyuge" value="Sí" onchange="toggleSection('j_conyugeFields',true)"/> Sí</label>
+            <label class="radio-label"><input type="radio" name="j_tieneConyuge" value="No" onchange="toggleSection('j_conyugeFields',false)" checked/> No</label>
+          </div>
+        </div>
+        <div id="j_conyugeFields" style="display:none;" class="mt-4">
+          <div class="grid-2">
+            <div class="field-group"><label class="field-label">Nombres del Cónyuge *</label><input type="text" name="j_conyugeNombres" placeholder="Nombres completos"/></div>
+            <div class="field-group"><label class="field-label">Apellidos del Cónyuge *</label><input type="text" name="j_conyugeApellidos" placeholder="Apellidos completos"/></div>
+            <div class="field-group"><label class="field-label">Tipo de Documento</label>
+              <select name="j_conyugeTipoDoc"><option value="">Seleccione...</option><option>C.C.</option><option>C.E.</option><option>P.P.</option></select>
+            </div>
+            <div class="field-group"><label class="field-label">Número de Documento</label><input type="text" name="j_conyugeNumDoc" placeholder="Número de identificación"/></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO J5: SOCIOS/ACCIONISTAS -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="J-step-4">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">5</span>Socios o Accionistas
+        </h3>
+        <p class="text-sm text-gray-600 mb-4">Propietarios, directa o indirectamente, de más del 1% del capital social.</p>
+        <div id="sociosList">
+          <div class="socio-card" id="socio-0">
+            <p class="text-sm font-semibold text-gray-700 mb-3">Socio / Accionista 1</p>
+            <div class="grid-2">
+              <div class="field-group col-span-2"><label class="field-label">Denominación social o nombre completo</label><input type="text" name="j_socio_0_nombre" placeholder="Nombre completo o razón social"/></div>
+              <div class="field-group"><label class="field-label">Tipo de identificación</label>
+                <select name="j_socio_0_tipoId"><option value="">Seleccione...</option><option>C.C.</option><option>C.E.</option><option>P.P.</option><option>NIT</option><option>T.I.</option></select>
+              </div>
+              <div class="field-group"><label class="field-label">Número de identificación</label><input type="text" name="j_socio_0_numId" placeholder="Número"/></div>
+              <div class="field-group"><label class="field-label">Fecha de expedición del documento</label><input type="date" name="j_socio_0_fechaExp"/></div>
+              <div class="field-group"><label class="field-label">Porcentaje de participación (%)</label><input type="number" name="j_socio_0_porcentaje" min="0" max="100" placeholder="Ej: 50"/></div>
+            </div>
+            <div class="grid-2 mt-2">
+              <label class="check-option text-xs"><input type="checkbox" name="j_socio_0_recursosPub"/> ¿Administra Recursos públicos?</label>
+              <label class="check-option text-xs"><input type="checkbox" name="j_socio_0_poderPublico"/> ¿Ejerce algún grado de poder público?</label>
+              <label class="check-option text-xs"><input type="checkbox" name="j_socio_0_reconocPublico"/> ¿Goza de reconocimiento público?</label>
+              <label class="check-option text-xs"><input type="checkbox" name="j_socio_0_declaraTrib"/> ¿Obligado a declaración tributaria en otro país?</label>
+              <label class="check-option text-xs col-span-2"><input type="checkbox" name="j_socio_0_familiarActivos"/> ¿Algún familiar es empleado de la Sociedad de Activos S.A?</label>
+            </div>
+          </div>
+        </div>
+        <button type="button" onclick="addSocio()" class="mt-3 btn-outline">+ Agregar Socio/Accionista</button>
+      </div>
+
+      <!-- PASO J6: INFORMACIÓN FINANCIERA EMPRESA -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="J-step-5">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">6</span>Información Financiera
+        </h3>
+        <div class="grid-2">
+          <div class="field-group"><label class="field-label">Ventas / Ingresos *</label><input type="number" name="j_ventas" min="0" placeholder="$ 0"/></div>
+          <div class="field-group"><label class="field-label">Otros Ingresos</label><input type="number" name="j_otrosIngresos" min="0" placeholder="$ 0"/></div>
+          <div class="field-group"><label class="field-label">Total Ingresos *</label><input type="number" name="j_totalIngresos" min="0" placeholder="$ 0"/></div>
+          <div class="field-group"><label class="field-label">Total Activos *</label><input type="number" name="j_totalActivos" min="0" placeholder="$ 0"/></div>
+          <div class="field-group"><label class="field-label">Total Pasivos *</label><input type="number" name="j_totalPasivos" min="0" placeholder="$ 0"/></div>
+          <div class="field-group"><label class="field-label">Total Egresos *</label><input type="number" name="j_totalEgresos" min="0" placeholder="$ 0"/></div>
+          <div class="field-group"><label class="field-label">Total Patrimonio *</label><input type="number" name="j_totalPatrimonio" min="0" placeholder="$ 0"/></div>
+          <div class="field-group"><label class="field-label">¿Declara Renta?</label>
+            <select name="j_declRenta2"><option value="">Seleccione...</option><option>Sí</option><option>No</option></select>
+          </div>
+          <div class="field-group col-span-2"><label class="field-label">Detalle de Otros Ingresos</label><input type="text" name="j_detalleOtrosIngresos" placeholder="Describa otros ingresos"/></div>
+        </div>
+        <!-- Años experiencia para GCOM-FT009 -->
+        <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p class="text-sm font-semibold text-yellow-800 mb-3">📊 Datos para evaluación GCOM-FT009</p>
+          <div class="grid-2">
+            <div class="field-group"><label class="field-label">Años de la empresa en el mercado *</label><input type="number" id="j_aniosExp" name="j_aniosExp" min="0" placeholder="Ej: 10"/></div>
+            <div class="field-group"><label class="field-label">Negocios cerrados (último año) *</label><input type="number" id="j_negociosCerrados" name="j_negociosCerrados" min="0" placeholder="Ej: 20"/></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO J7: OPERACIONES INTERNACIONALES -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="J-step-6">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">7</span>Operaciones Internacionales
+        </h3>
+        <div class="space-y-4">
+          <div class="field-group"><label class="field-label">¿Realiza operaciones en moneda extranjera? *</label>
+            <div class="flex gap-6 mt-2"><label class="radio-label"><input type="radio" name="j_opMonedaExt" value="Sí"/> Sí</label><label class="radio-label"><input type="radio" name="j_opMonedaExt" value="No" checked/> No</label></div>
+          </div>
+          <div class="field-group"><label class="field-label">Tipo de Operación *</label>
+            <select name="j_tipoOperacion"><option value="">Seleccione...</option><option>Ingreso</option><option>Egreso</option><option>Ninguno</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">Tipo de Producto *</label>
+            <select name="j_tipoProducto"><option value="">Seleccione...</option><option>Exportaciones</option><option>Importaciones</option><option>Inversiones</option><option>Transferencias</option><option>Otro</option><option>Ninguno</option></select>
+          </div>
+          <div class="field-group"><label class="field-label">¿Tiene productos financieros en el exterior? *</label>
+            <div class="flex gap-6 mt-2"><label class="radio-label"><input type="radio" name="j_prodFinExt" value="Si"/> Sí</label><label class="radio-label"><input type="radio" name="j_prodFinExt" value="No" checked/> No</label></div>
+          </div>
+          <div class="field-group"><label class="field-label">¿Tiene cuentas en moneda extranjera? *</label>
+            <div class="flex gap-6 mt-2"><label class="radio-label"><input type="radio" name="j_cuentaMonedaExt" value="Si"/> Sí</label><label class="radio-label"><input type="radio" name="j_cuentaMonedaExt" value="No" checked/> No</label></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO J8: PPE -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="J-step-7">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">8</span>Persona Políticamente Expuesta (PPE)
+        </h3>
+        <div class="space-y-4">
+          <script>
+            const ppePreguntasJ = ['¿Es usted una Persona Expuesta Políticamente (PEP)?','¿Tiene familiares que sean PEP?','¿Tiene reconocimiento público?','¿Pertenece a una organización internacional?','¿Ejerce funciones públicas en el extranjero?','¿Ocupa cargo en entidad del estado?','¿Administra recursos públicos?','¿Contrata con el estado?','¿Es exintegrante de grupos armados?','¿Tiene familiares en la SAE?'];
+            document.write(ppePreguntasJ.map((q, i) => `<div class="field-group"><label class="field-label">${q}</label><div class="flex gap-6 mt-2"><label class="radio-label"><input type="radio" name="j_ppe_${i}" value="Sí"/> Sí</label><label class="radio-label"><input type="radio" name="j_ppe_${i}" value="No" checked/> No</label></div></div>`).join(''));
+          </script>
+        </div>
+      </div>
+
+      <!-- PASO J9: ORIGEN DE FONDOS -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="J-step-8">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">9</span>Declaración de Origen de Fondos
+        </h3>
+        <p class="text-sm text-gray-600 mb-4">La empresa declara que sus recursos provienen de actividades lícitas:</p>
+        <p class="text-sm font-semibold text-gray-700 mb-2">Fuentes de recursos:</p>
+        <div class="flex flex-wrap gap-2 mb-4">
+          <label class="check-option"><input type="checkbox" name="j_fuente" value="Capitalización"/> Capitalización y parte de socios</label>
+          <label class="check-option"><input type="checkbox" name="j_fuente" value="Actividad económica"/> Desarrollo de actividad económica</label>
+          <label class="check-option"><input type="checkbox" name="j_fuente" value="Dividendos"/> Dividendos y participación</label>
+          <label class="check-option"><input type="checkbox" name="j_fuente" value="Préstamo financiero"/> Préstamo entidad financiera</label>
+          <label class="check-option"><input type="checkbox" name="j_fuente" value="Rendimiento inversión"/> Rendimiento por inversión</label>
+          <label class="check-option"><input type="checkbox" name="j_fuente" value="Utilidad negocios"/> Utilidad de negocios</label>
+          <label class="check-option"><input type="checkbox" name="j_fuente" value="Venta bienes muebles"/> Venta de bienes muebles</label>
+          <label class="check-option"><input type="checkbox" name="j_fuente" value="Venta inmueble"/> Venta de inmueble</label>
+          <label class="check-option"><input type="checkbox" name="j_fuente" value="Otro"/> Otro</label>
+        </div>
+        <p class="text-sm font-semibold text-gray-700 mb-2">Arrendamientos de:</p>
+        <div class="flex flex-wrap gap-2">
+          <label class="check-option"><input type="checkbox" name="j_arriendo" value="Inmuebles"/> Inmuebles</label>
+          <label class="check-option"><input type="checkbox" name="j_arriendo" value="Apartamento"/> Apartamento</label>
+          <label class="check-option"><input type="checkbox" name="j_arriendo" value="Local"/> Local</label>
+          <label class="check-option"><input type="checkbox" name="j_arriendo" value="Casa"/> Casa</label>
+          <label class="check-option"><input type="checkbox" name="j_arriendo" value="Oficina"/> Oficina</label>
+          <label class="check-option"><input type="checkbox" name="j_arriendo" value="Muebles"/> Muebles</label>
+          <label class="check-option"><input type="checkbox" name="j_arriendo" value="Vehículo"/> Vehículo</label>
+          <label class="check-option"><input type="checkbox" name="j_arriendo" value="Otro"/> Otro</label>
+        </div>
+      </div>
+
+      <!-- PASO J10: DECLARACIONES Y AUTORIZACIÓN -->
+      <div class="section-panel bg-gray-50 p-6 rounded-lg" id="J-step-9">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center mb-4">
+          <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold">10</span>Declaraciones y Autorización
+        </h3>
+        <p class="text-sm text-gray-600 mb-4">La empresa, a través de su representante legal, declara que los datos son veraces, que los recursos provienen de actividades lícitas y que no se encuentra incluida en listas restrictivas relacionadas con LAFT.</p>
+        <div class="field-group">
+          <label class="check-option cursor-pointer">
+            <input type="checkbox" id="j_aceptaTerminos" required/>
+            <span class="text-sm text-gray-700">Acepto y autorizo el tratamiento de mis datos personales y el proceso de consulta y estudio conforme a lo aquí indicado. <span class="text-red-500">*</span></span>
+          </label>
+        </div>
+        <div class="mt-4 p-3 bg-gray-100 rounded-lg text-center text-sm text-gray-500">
+          🔒 Verificación de Seguridad reCAPTCHA (se activará al enviar)
+        </div>
+      </div>
+
+    </div><!-- /formJuridica -->
+
+    <!-- BOTONES NAVEGACIÓN -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:24px 0;margin-top:24px;border-top:1px solid #e5e7eb;">
+      <button type="button" id="btnAnterior" class="btn-outline" onclick="prevStep()" disabled>ANTERIOR</button>
+      <p class="text-sm text-gray-600">Sección <span id="seccionActual">1</span> de <span id="seccionTotal">9</span></p>
+      <button type="button" id="btnSiguiente" class="btn-primary" onclick="nextStep()">SIGUIENTE</button>
+      <button type="button" id="btnEnviar" class="btn-primary" style="display:none;background:#16a34a;" onclick="submitForm()">ENVIAR FORMULARIO</button>
+    </div>
+
+  </form>
+
+  <div class="flex justify-center w-full py-4 pb-8">
+    <footer class="py-6 text-center w-full">
+      <p class="text-gray-500 text-sm">© 2025 Centro Único de Trámites | Todos los derechos reservados</p>
+    </footer>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════ STATE ═══════════════════════
+let tipo = 'natural';
+let currentStep = 0;
+let socioCount = 1;
+
+const stepsNatural = [
+  { label: 'Carga de Documentos', icon: '📄' },
+  { label: 'Identificación', icon: '👤' },
+  { label: 'Información del Cónyuge', icon: '💑' },
+  { label: 'Actividad Económica', icon: '💼' },
+  { label: 'Información Financiera', icon: '💰' },
+  { label: 'Operaciones Internacionales', icon: '🌐' },
+  { label: 'Persona Políticamente Expuesta (PPE)', icon: '🏛️' },
+  { label: 'Declaración de Origen de Fondos', icon: '📋' },
+  { label: 'Declaraciones y Autorización', icon: '✅' },
+];
+const stepsJuridica = [
+  { label: 'Carga de Documentos', icon: '📄' },
+  { label: 'Identificación de la Empresa', icon: '🏢' },
+  { label: 'Representante Legal', icon: '👤' },
+  { label: 'Información del Cónyuge', icon: '💑' },
+  { label: 'Socios o Accionistas', icon: '👥' },
+  { label: 'Información Financiera', icon: '💰' },
+  { label: 'Operaciones Internacionales', icon: '🌐' },
+  { label: 'Persona Políticamente Expuesta (PPE)', icon: '🏛️' },
+  { label: 'Declaración de Origen de Fondos', icon: '📋' },
+  { label: 'Declaraciones y Autorización', icon: '✅' },
+];
+
+// ═══════════════════════ INIT ═══════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  setTipo('natural');
+});
+
+// ═══════════════════════ TIPO PERSONA ═══════════════════════
+function setTipo(t) {
+  tipo = t;
+  currentStep = 0;
+
+  document.getElementById('formNatural').style.display = t === 'natural' ? 'block' : 'none';
+  document.getElementById('formJuridica').style.display = t === 'juridica' ? 'block' : 'none';
+  document.getElementById('alertaNatural').style.display = t === 'natural' ? 'block' : 'none';
+  document.getElementById('alertaJuridica').style.display = t === 'juridica' ? 'block' : 'none';
+
+  renderStepper();
+  showStep(0);
+}
+
+// ═══════════════════════ STEPPER ═══════════════════════
+function renderStepper() {
+  const steps = tipo === 'natural' ? stepsNatural : stepsJuridica;
+  const total = steps.length;
+
+  // Desktop — 5+5 grid or single row
+  const desktop = document.getElementById('stepperDesktop');
+  const rows = [steps.slice(0, 5), steps.slice(5)];
+  desktop.innerHTML = rows.map(row => `
+    <div style="display:grid;grid-template-columns:repeat(${row.length},1fr);gap:16px;margin-bottom:16px;">
+      ${row.map((s, localI) => {
+        const i = steps.indexOf(s);
+        const isActive = i === currentStep;
+        const isDone = i < currentStep;
+        const cls = isActive ? 'step-active' : isDone ? 'step-done' : 'step-inactive';
+        const iconBg = isActive ? '#2563eb' : isDone ? '#16a34a' : '#9ca3af';
+        return `<div class="${cls}" style="display:flex;flex-direction:column;align-items:center;padding:16px;border-radius:8px;cursor:${i <= currentStep ? 'pointer' : 'default'};transition:all 0.2s;" onclick="if(${i} <= ${currentStep}) goToStep(${i})">
+          <div style="width:40px;height:40px;border-radius:50%;background:${iconBg};color:white;display:flex;align-items:center;justify-content:center;margin-bottom:8px;font-size:18px;">${isDone ? '✓' : s.icon}</div>
+          <span style="font-size:12px;text-align:center;line-height:1.2;font-weight:${isActive ? 600 : 400};color:${isActive ? '#2563eb' : isDone ? '#16a34a' : '#6b7280'}">${s.label}</span>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+
+  // Mobile — horizontal scroll
+  const mobile = document.getElementById('stepperMobile');
+  mobile.innerHTML = `<div style="display:flex;min-width:max-content;gap:8px;padding:0 8px;">
+    ${steps.map((s, i) => {
+      const isActive = i === currentStep;
+      const isDone = i < currentStep;
+      const cls = isActive ? 'step-active' : isDone ? 'step-done' : 'step-inactive';
+      const iconBg = isActive ? '#2563eb' : isDone ? '#16a34a' : '#9ca3af';
+      return `<div class="${cls}" style="display:flex;flex-direction:column;align-items:center;min-width:80px;padding:8px;border-radius:8px;cursor:pointer;" onclick="if(${i} <= ${currentStep}) goToStep(${i})">
+        <div style="width:32px;height:32px;border-radius:50%;background:${iconBg};color:white;display:flex;align-items:center;justify-content:center;margin-bottom:4px;font-size:14px;">${isDone ? '✓' : s.icon}</div>
+        <span style="font-size:10px;text-align:center;line-height:1.1;color:${isActive ? '#2563eb' : '#6b7280'}">${s.label.substring(0,12)}...</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  document.getElementById('pasoActual').textContent = currentStep + 1;
+  document.getElementById('pasoTotal').textContent = total;
+  document.getElementById('seccionActual').textContent = currentStep + 1;
+  document.getElementById('seccionTotal').textContent = total;
+}
+
+// ═══════════════════════ NAVEGACIÓN ═══════════════════════
+function showStep(step) {
+  const prefix = tipo === 'natural' ? 'N' : 'J';
+  const steps = tipo === 'natural' ? stepsNatural : stepsJuridica;
+  const total = steps.length;
+
+  document.querySelectorAll(`#form${tipo === 'natural' ? 'Natural' : 'Juridica'} .section-panel`).forEach((el, i) => {
+    el.classList.toggle('active', i === step);
+  });
+
+  document.getElementById('btnAnterior').disabled = step === 0;
+  const isLast = step === total - 1;
+  document.getElementById('btnSiguiente').style.display = isLast ? 'none' : 'inline-flex';
+  document.getElementById('btnEnviar').style.display = isLast ? 'inline-flex' : 'none';
+
+  renderStepper();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep() {
+  const total = (tipo === 'natural' ? stepsNatural : stepsJuridica).length;
+  if (currentStep < total - 1) { currentStep++; showStep(currentStep); }
+}
+function prevStep() {
+  if (currentStep > 0) { currentStep--; showStep(currentStep); }
+}
+function goToStep(i) { currentStep = i; showStep(i); }
+
+// ═══════════════════════ HELPERS ═══════════════════════
+function toggleSection(id, show) {
+  document.getElementById(id).style.display = show ? 'block' : 'none';
+}
+
+function toggleActividadFields(val) {
+  const esEmpleado = val === 'empleado' || val === 'servidor_publico';
+  const esComercio = val === 'comerciante' || val === 'independiente';
+  document.getElementById('camposEmpleado').style.display = esEmpleado ? 'block' : 'none';
+  document.getElementById('camposComercio').style.display = esComercio ? 'block' : 'none';
+}
+
+function showFileName(input, previewId) {
+  const el = document.getElementById(previewId);
+  if (el && input.files[0]) el.textContent = '✓ ' + input.files[0].name;
+}
+
+function addSocio() {
+  socioCount++;
+  const list = document.getElementById('sociosList');
+  const div = document.createElement('div');
+  div.className = 'socio-card';
+  div.innerHTML = `
+    <p class="text-sm font-semibold text-gray-700 mb-3">Socio / Accionista ${socioCount}</p>
+    <div class="grid-2">
+      <div class="field-group col-span-2"><label class="field-label">Denominación social o nombre completo</label><input type="text" name="j_socio_${socioCount}_nombre" placeholder="Nombre completo o razón social"/></div>
+      <div class="field-group"><label class="field-label">Tipo de identificación</label>
+        <select name="j_socio_${socioCount}_tipoId"><option value="">Seleccione...</option><option>C.C.</option><option>C.E.</option><option>P.P.</option><option>NIT</option><option>T.I.</option></select>
+      </div>
+      <div class="field-group"><label class="field-label">Número de identificación</label><input type="text" name="j_socio_${socioCount}_numId" placeholder="Número"/></div>
+      <div class="field-group"><label class="field-label">Fecha de expedición</label><input type="date" name="j_socio_${socioCount}_fechaExp"/></div>
+      <div class="field-group"><label class="field-label">Porcentaje de participación (%)</label><input type="number" name="j_socio_${socioCount}_porcentaje" min="0" max="100" placeholder="Ej: 50"/></div>
+    </div>
+    <div class="grid-2 mt-2">
+      <label class="check-option text-xs"><input type="checkbox" name="j_socio_${socioCount}_recursosPub"/> ¿Administra Recursos públicos?</label>
+      <label class="check-option text-xs"><input type="checkbox" name="j_socio_${socioCount}_poderPublico"/> ¿Ejerce algún grado de poder público?</label>
+      <label class="check-option text-xs"><input type="checkbox" name="j_socio_${socioCount}_reconocPublico"/> ¿Goza de reconocimiento público?</label>
+      <label class="check-option text-xs"><input type="checkbox" name="j_socio_${socioCount}_declaraTrib"/> ¿Obligado a declaración tributaria en otro país?</label>
+      <label class="check-option text-xs col-span-2"><input type="checkbox" name="j_socio_${socioCount}_familiarActivos"/> ¿Algún familiar es empleado de la Sociedad de Activos S.A?</label>
+    </div>`;
+  list.appendChild(div);
+}
+
+// ═══════════════════════ EVALUACIÓN GCOM-FT009 ═══════════════════════
+function calcularEvaluacion() {
+  const prefix = tipo === 'natural' ? 'n' : 'j';
+  const anios = parseInt(document.getElementById(`${prefix}_aniosExp`)?.value || '0') || 0;
+  const neg = parseInt(document.getElementById(`${prefix}_negociosCerrados`)?.value || '0') || 0;
+
+  // Habilitantes
+  const docOk = tipo === 'natural'
+    ? document.querySelector('input[name="n_cedula"]')?.files?.length > 0
+    : document.querySelector('input[name="j_camaraComercio"]')?.files?.length > 0;
+  const rutOk = tipo === 'natural'
+    ? document.querySelector('input[name="n_rut"]')?.files?.length > 0
+    : document.querySelector('input[name="j_rut"]')?.files?.length > 0;
+  const expOk = anios >= 4;
+  const sagrilaftOk = true;
+  const todosHab = docOk && rutOk && expOk && sagrilaftOk;
+
+  const habEl = document.getElementById(`${prefix}_habilitantes`);
+  const habs = [
+    { label: 'Documento de identidad / Cámara de Comercio', ok: docOk },
+    { label: 'Inscripción en RUT', ok: rutOk },
+    { label: 'Experiencia comercial mínimo 4 años', ok: expOk },
+    { label: 'Cumplimiento SAGRILAFT', ok: sagrilaftOk },
+  ];
+  habEl.innerHTML = habs.map(h => `
+    <div class="hab-item ${h.ok ? 'hab-ok' : 'hab-fail'}">
+      <span>${h.ok ? '✅' : '❌'}</span>
+      <span>${h.label}</span>
+    </div>`).join('');
+
+  // Puntaje
+  const nivelEst = tipo === 'natural'
+    ? document.querySelector('select[name="n_nivelEstudios"]')?.value
+    : document.querySelector('select[name="j_rlNivelEstudios"]')?.value;
+  const formMap = { primaria: 20, secundaria: 30, tecnico: 50, tecnologo: 55, profesional: 70, especializacion: 80, maestria: 90, doctorado: 100 };
+  const ptsForm = formMap[nivelEst] || 0;
+  let ptsExp = anios >= 25 ? 100 : anios >= 15 ? 75 : anios >= 4 ? 50 : 0;
+  const ptsDig = 50; // valor base
+  let ptsDes = neg >= 30 ? 100 : neg >= 20 ? 80 : neg >= 10 ? 60 : neg >= 5 ? 40 : neg >= 1 ? 20 : 0;
+  const total = ptsForm * 0.20 + ptsExp * 0.30 + ptsDig * 0.20 + ptsDes * 0.30;
+  const aprobado = todosHab && total >= 60;
+
+  const scoreEl = document.getElementById(`${prefix}_scoreRows`);
+  scoreEl.innerHTML = [
+    { label: 'Formación Académica (20%)', pts: ptsForm, pond: (ptsForm * 0.20).toFixed(1) },
+    { label: 'Experiencia Comercial (30%)', pts: ptsExp, pond: (ptsExp * 0.30).toFixed(1) },
+    { label: 'Competencias Digitales (20%)', pts: ptsDig, pond: (ptsDig * 0.20).toFixed(1) },
+    { label: 'Desempeño Comercial (30%)', pts: ptsDes, pond: (ptsDes * 0.30).toFixed(1) },
+  ].map(r => `
+    <div class="score-row">
+      <span style="font-size:12px;color:#6b7280;min-width:200px;">${r.label}</span>
+      <div class="score-bar"><div class="score-fill" style="width:${r.pts}%"></div></div>
+      <span style="font-size:12px;font-weight:700;color:#1e40af;min-width:30px;text-align:right;">${r.pond}</span>
+    </div>`).join('') + `
+    <div class="score-row" style="border-top:2px solid #1e40af;padding-top:8px;margin-top:4px;">
+      <span style="font-size:13px;font-weight:700;color:#1e40af;min-width:200px;">TOTAL PONDERADO</span>
+      <div class="score-bar"><div class="score-fill" style="width:${total}%;background:#1e40af"></div></div>
+      <span style="font-size:14px;font-weight:800;color:#1e40af;min-width:30px;text-align:right;">${total.toFixed(1)}</span>
+    </div>`;
+
+  const resEl = document.getElementById(`${prefix}_resultado`);
+  resEl.style.display = 'block';
+  resEl.style.background = aprobado ? '#dcfce7' : '#fee2e2';
+  resEl.style.color = aprobado ? '#15803d' : '#dc2626';
+  resEl.style.border = `2px solid ${aprobado ? '#16a34a' : '#dc2626'}`;
+  resEl.textContent = !todosHab
+    ? `❌ NO APROBADO — No cumple todos los requisitos habilitantes`
+    : aprobado
+      ? `✅ APROBADO — Puntaje: ${total.toFixed(1)}/100 (≥60)`
+      : `❌ NO APROBADO — Puntaje: ${total.toFixed(1)}/100 (se requiere ≥60)`;
+
+  return { aprobado, total, todosHab };
+}
+
+// ═══════════════════════ SUBMIT ═══════════════════════
+async function submitForm() {
+  const aceptaId = tipo === 'natural' ? 'n_aceptaTerminos' : 'j_aceptaTerminos';
+  if (!document.getElementById(aceptaId)?.checked) {
+    alert('Debe aceptar la autorización de tratamiento de datos para continuar.'); return;
+  }
+
+  // broker_id: query param URL → sessionStorage → vacío
+  const urlParams = new URLSearchParams(window.location.search);
+  const brokerId = urlParams.get('broker_id') || sessionStorage.getItem('broker_id') || '';
+
+  const fd = new FormData();
+  fd.append('tipo_persona', tipo);
+  if (brokerId) fd.append('broker_id', brokerId);
+
+  if (tipo === 'natural') {
+    const nombres = [
+      document.querySelector('[name="n_nombres"]')?.value || '',
+      document.querySelector('[name="n_primerApellido"]')?.value || '',
+    ].join(' ').trim();
+    if (nombres) fd.append('nombres', nombres);
+
+    const appendIf = (key, sel) => { const v = document.querySelector(sel)?.value; if (v) fd.append(key, v); };
+    appendIf('documento',      '[name="n_numDoc"]');
+    appendIf('email',          '[name="n_email"]');
+    appendIf('telefono',       '[name="n_telMovil"]');
+    appendIf('ciudad',         '[name="n_ciudad"]');
+    appendIf('nivel_estudios', '[name="n_nivelEstudios"]');
+    appendIf('origen_fondos',  '[name="n_origenFondos"]');
+    appendIf('ingresos',       '[name="n_ingresos"]');
+    appendIf('egresos',        '[name="n_egresos"]');
+    appendIf('activos',        '[name="n_activos"]');
+    appendIf('pasivos',        '[name="n_pasivos"]');
+
+    fd.append('anios_experiencia', document.getElementById('n_aniosExp')?.value || '0');
+    fd.append('negocios_cerrados', document.getElementById('n_negociosCerrados')?.value || '0');
+    fd.append('es_pep', document.querySelector('input[name="n_esPep"]:checked')?.value === 'Sí' ? 'true' : 'false');
+
+    // Archivos persona natural
+    const rutFile    = document.querySelector('input[name="n_rut"]')?.files?.[0];
+    const cedulaFile = document.querySelector('input[name="n_cedula"]')?.files?.[0];
+    if (rutFile)    fd.append('file_rut',    rutFile);
+    if (cedulaFile) fd.append('file_cedula', cedulaFile);
+
+  } else {
+    const nombres = [
+      document.querySelector('[name="j_rlNombres"]')?.value || '',
+      document.querySelector('[name="j_rlApellidos"]')?.value || '',
+    ].join(' ').trim();
+    if (nombres) fd.append('nombres', nombres);
+
+    const appendIf = (key, sel) => { const v = document.querySelector(sel)?.value; if (v) fd.append(key, v); };
+    appendIf('documento',      '[name="j_nit"]');
+    appendIf('email',          '[name="j_email"]');
+    appendIf('ciudad',         '[name="j_ciudad"]');
+    appendIf('nivel_estudios', '[name="j_rlNivelEstudios"]');
+    appendIf('origen_fondos',  '[name="j_origenFondos"]');
+    appendIf('ingresos',       '[name="j_ingresos"]');
+    appendIf('egresos',        '[name="j_egresos"]');
+    appendIf('activos',        '[name="j_activos"]');
+    appendIf('pasivos',        '[name="j_pasivos"]');
+
+    fd.append('anios_experiencia', document.getElementById('j_aniosExp')?.value || '0');
+    fd.append('negocios_cerrados', document.getElementById('j_negociosCerrados')?.value || '0');
+    fd.append('es_pep', document.querySelector('input[name="j_esPep"]:checked')?.value === 'Sí' ? 'true' : 'false');
+
+    // Archivos persona jurídica
+    const rutFile    = document.querySelector('input[name="j_rut"]')?.files?.[0];
+    const cedulaFile = document.querySelector('input[name="j_cedulaRL"]')?.files?.[0];
+    const compFile   = document.querySelector('input[name="j_compAccionaria"]')?.files?.[0];
+    const camaraFile = document.querySelector('input[name="j_camaraComercio"]')?.files?.[0];
+    const rentaFile  = document.querySelector('input[name="j_declRenta"]')?.files?.[0];
+    if (rutFile)    fd.append('file_rut',                  rutFile);
+    if (cedulaFile) fd.append('file_cedula',               cedulaFile);
+    if (compFile)   fd.append('file_composicion_accionaria', compFile);
+    if (camaraFile) fd.append('file_camara_comercio',      camaraFile);
+    if (rentaFile)  fd.append('file_declaracion_renta',    rentaFile);
+  }
+
+  document.getElementById('overlayLoading').style.display = 'flex';
+
+  try {
+    // Sin Content-Type: el navegador lo establece automáticamente con el boundary correcto
+    const res = await fetch('http://localhost:8000/sagrilaft', {
+      method: 'POST',
+      body: fd,
+    });
+    document.getElementById('overlayLoading').style.display = 'none';
+    if (res.ok) {
+      document.getElementById('successIcon').textContent = '📋';
+      document.getElementById('successTitle').textContent = 'Registro Recibido';
+      document.getElementById('successText').textContent = 'Su información fue enviada correctamente. El equipo de Activos por Colombia revisará su documentación y le notificará el resultado.';
+      document.getElementById('overlaySuccess').style.display = 'flex';
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert('Error al enviar: ' + (err.detail || res.statusText));
+    }
+  } catch (e) {
+    document.getElementById('overlayLoading').style.display = 'none';
+    alert('No se pudo conectar al servidor. Verifique que el backend esté activo en localhost:8000.');
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel Admin SAGRILAFT — Activos por Colombia</title>
+  <style>
+    :root {
+      --navy:  #1a3355;
+      --navy2: #254a7d;
+      --gold:  #f6a713;
+      --red:   #d70e27;
+      --green: #16a34a;
+      --bg:    #f0f4f8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #1f2937; min-height: 100vh; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--navy);
+      color: #fff;
+      height: 58px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 10px rgba(0,0,0,.35);
+    }
+    header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: .03em; }
+    header .sub { font-size: .82rem; color: var(--gold); font-weight: 600; }
+
+    /* ── FILTROS ── */
+    .filters {
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .filters label { font-size: .75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .06em; }
+    .filters select, .filters input[type=search] {
+      border: 1.5px solid #d1d5db;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: .85rem;
+      color: #1f2937;
+      background: #fff;
+    }
+    .filters select:focus, .filters input:focus { outline: none; border-color: var(--navy); }
+    .filters input[type=search] { width: 220px; }
+    .btn-refresh {
+      margin-left: auto;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 18px;
+      font-size: .85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-refresh:hover { background: var(--navy2); }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: flex;
+      height: calc(100vh - 58px - 48px);
+    }
+
+    /* ── TABLA AREA ── */
+    .table-area {
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 18px 20px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 10px 18px;
+      border-left: 4px solid;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      min-width: 100px;
+    }
+    .stat-card.s-total    { border-color: var(--navy); }
+    .stat-card.s-pend     { border-color: var(--gold); }
+    .stat-card.s-apro     { border-color: var(--green); }
+    .stat-card.s-rech     { border-color: var(--red); }
+    .stat-card .num { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+    .stat-card .lbl { font-size: .7rem; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-top: 2px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      font-size: .875rem;
+    }
+    thead th {
+      background: var(--navy);
+      color: #fff;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    tbody tr { border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background .12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f0f5ff; }
+    tbody tr.selected { background: #dbeafe; }
+    tbody td { padding: 10px 14px; vertical-align: middle; }
+    .empty-row { text-align: center; padding: 60px 20px !important; color: #9ca3af; font-size: .9rem; cursor: default !important; }
+    tbody tr:has(.empty-row):hover { background: #fff; }
+
+    /* badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .b-pendiente { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+    .b-aprobado  { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .b-rechazado { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .b-natural   { background: #e0f2fe; color: #0369a1; }
+    .b-juridica  { background: #f3e8ff; color: #7c3aed; }
+
+    /* ── DETAIL PANEL ── */
+    .detail-panel {
+      width: 0;
+      overflow: hidden;
+      background: #fff;
+      border-left: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      transition: width .22s ease, min-width .22s ease;
+      flex-shrink: 0;
+    }
+    .detail-panel.open { width: 450px; min-width: 450px; }
+
+    .dp-header {
+      background: var(--navy);
+      color: #fff;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .dp-header h2 { font-size: .95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 340px; }
+    .btn-close {
+      background: rgba(255,255,255,.18);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .btn-close:hover { background: rgba(255,255,255,.32); }
+
+    .dp-body { flex: 1; overflow-y: auto; padding: 18px; }
+
+    .ds { margin-bottom: 16px; }
+    .ds-title {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--navy);
+      border-bottom: 2px solid #e8eef8;
+      padding-bottom: 4px;
+      margin-bottom: 9px;
+    }
+    .dg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .df { display: flex; flex-direction: column; gap: 2px; }
+    .df .k { font-size: .68rem; color: #6b7280; font-weight: 600; text-transform: uppercase; }
+    .df .v { font-size: .85rem; color: #1f2937; font-weight: 500; word-break: break-word; }
+    .df.full { grid-column: 1 / -1; }
+
+    /* eval */
+    .eval-box {
+      background: #f0f9ff;
+      border: 1.5px solid #bae6fd;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 4px;
+    }
+    .eval-box-title { font-size: .75rem; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px; }
+    .hab-item { display: flex; align-items: center; gap: 7px; font-size: .83rem; padding: 3px 0; }
+    .hab-ok   { color: var(--green); }
+    .hab-fail { color: var(--red); }
+
+    .score-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+    .score-lbl { font-size: .75rem; color: #374151; width: 168px; flex-shrink: 0; }
+    .score-bar { flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+    .score-fill { height: 100%; background: var(--navy); border-radius: 3px; transition: width .5s; }
+    .score-pts { font-size: .75rem; font-weight: 700; color: var(--navy); width: 30px; text-align: right; }
+
+    .eval-total {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 7px;
+      text-align: center;
+      font-weight: 800;
+      font-size: .95rem;
+      letter-spacing: .02em;
+    }
+    .eval-apro  { background: #dcfce7; color: #15803d; }
+    .eval-noap  { background: #fee2e2; color: var(--red); }
+
+    /* actions footer */
+    .dp-actions {
+      border-top: 1px solid #e2e8f0;
+      padding: 14px 18px;
+      background: #f8fafc;
+      flex-shrink: 0;
+    }
+    .obs-label { font-size: .75rem; font-weight: 700; color: #374151; display: block; margin-bottom: 5px; }
+    .obs-ta {
+      width: 100%;
+      border: 1.5px solid #d1d5db;
+      border-radius: 7px;
+      padding: 8px 10px;
+      font-size: .83rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 68px;
+      margin-bottom: 10px;
+    }
+    .obs-ta:focus { outline: none; border-color: var(--navy); }
+    .act-btns { display: flex; gap: 10px; }
+    .btn-aprobar, .btn-rechazar {
+      flex: 1;
+      border: none;
+      border-radius: 7px;
+      padding: 10px;
+      font-size: .85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, background .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-aprobar { background: var(--green); color: #fff; }
+    .btn-aprobar:hover:not(:disabled) { background: #15803d; }
+    .btn-rechazar { background: var(--red); color: #fff; }
+    .btn-rechazar:hover:not(:disabled) { background: #b91c1c; }
+    .btn-aprobar:disabled, .btn-rechazar:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* zona de carga de archivo */
+    .file-upload-zone {
+      border: 2px dashed #fcd34d;
+      border-radius: 7px;
+      padding: 10px 14px;
+      background: #fff;
+      cursor: pointer;
+      font-size: .82rem;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: border-color .15s;
+    }
+    .file-upload-zone:hover { border-color: var(--gold); }
+    .file-upload-zone input[type=file] { display: none; }
+    .file-selected { color: var(--navy); font-weight: 600; }
+
+    /* botón principal evaluar */
+    .btn-evaluar {
+      width: 100%;
+      margin-top: 10px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 11px;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background .15s;
+    }
+    .btn-evaluar:hover:not(:disabled) { background: var(--navy2); }
+    .btn-evaluar:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* spinner */
+    .spin {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* toast */
+    #toast {
+      position: fixed;
+      bottom: 22px; right: 22px;
+      background: #1f2937;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: .85rem;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s;
+      z-index: 999;
+    }
+    #toast.show { opacity: 1; }
+    #toast.ok  { background: var(--green); }
+    #toast.err { background: var(--red); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Panel Admin — SAGRILAFT</h1>
+  <span class="sub">Activos por Colombia</span>
+</header>
+
+<div class="filters">
+  <label>Estado</label>
+  <select id="fEstado" onchange="filtrar()">
+    <option value="">Todos</option>
+    <option value="PENDIENTE">Pendiente</option>
+    <option value="APROBADO">Aprobado</option>
+    <option value="RECHAZADO">Rechazado</option>
+  </select>
+
+  <label>Tipo</label>
+  <select id="fTipo" onchange="filtrar()">
+    <option value="">Todos</option>
+    <option value="natural">Natural</option>
+    <option value="juridica">Jurídica</option>
+  </select>
+
+  <input type="search" id="fTexto" placeholder="Buscar nombre o documento…" oninput="filtrar()" />
+
+  <button type="button" class="btn-refresh" id="btnRefresh" onclick="cargar()">⟳ Actualizar</button>
+</div>
+
+<div class="layout">
+
+  <!-- TABLA -->
+  <div class="table-area">
+    <div class="stats" id="stats"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre / Documento</th>
+          <th>Tipo</th>
+          <th>Ciudad</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td class="empty-row" colspan="5">Cargando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PANEL DETALLE -->
+  <div class="detail-panel" id="panel">
+    <div class="dp-header">
+      <h2 id="dpTitle">Detalle</h2>
+      <button class="btn-close" onclick="cerrar()">✕</button>
+    </div>
+    <div class="dp-body" id="dpBody"></div>
+    <div class="dp-actions" id="dpActions"></div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = 'http://localhost:8000';
+let todos = [];
+let actual = null;
+
+// ── INIT ─────────────────────────────────────────────────────────
+cargar();
+
+async function cargar() {
+  const btn = document.getElementById('btnRefresh');
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ Cargando…'; }
+  try {
+    const r = await fetch(`${API}/sagrilaft`);
+    if (!r.ok) throw new Error(await r.text());
+    todos = await r.json();
+    filtrar();
+    if (actual) {
+      const fresh = todos.find(x => x.id === actual.id);
+      if (fresh) await abrirDetalle(fresh);
+    }
+  } catch (e) {
+    document.getElementById('tbody').innerHTML =
+      `<tr><td class="empty-row" colspan="5">Error al cargar: ${e.message}</td></tr>`;
+    toast('Error al conectar con el backend', 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Actualizar'; }
+  }
+}
+
+// ── FILTROS ──────────────────────────────────────────────────────
+function filtrar() {
+  const est  = document.getElementById('fEstado').value;
+  const tipo = document.getElementById('fTipo').value;
+  const txt  = (document.getElementById('fTexto').value || '').toLowerCase();
+
+  const lista = todos.filter(r => {
+    if (est  && r.estado_sagrilaft !== est)  return false;
+    if (tipo && r.tipo_persona    !== tipo)  return false;
+    if (txt) {
+      const h = `${r.nombres||''} ${r.documento||''} ${r.email||''}`.toLowerCase();
+      if (!h.includes(txt)) return false;
+    }
+    return true;
+  });
+
+  renderStats();
+  renderTabla(lista);
+}
+
+// ── STATS ────────────────────────────────────────────────────────
+function renderStats() {
+  const c = { PENDIENTE: 0, APROBADO: 0, RECHAZADO: 0 };
+  todos.forEach(r => { if (c[r.estado_sagrilaft] !== undefined) c[r.estado_sagrilaft]++; });
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card s-total">
+      <div class="num">${todos.length}</div><div class="lbl">Total</div>
+    </div>
+    <div class="stat-card s-pend">
+      <div class="num" style="color:#ca8a04">${c.PENDIENTE}</div><div class="lbl">Pendientes</div>
+    </div>
+    <div class="stat-card s-apro">
+      <div class="num" style="color:var(--green)">${c.APROBADO}</div><div class="lbl">Aprobados</div>
+    </div>
+    <div class="stat-card s-rech">
+      <div class="num" style="color:var(--red)">${c.RECHAZADO}</div><div class="lbl">Rechazados</div>
+    </div>`;
+}
+
+// ── TABLA ────────────────────────────────────────────────────────
+function renderTabla(lista) {
+  const tb = document.getElementById('tbody');
+  if (!lista.length) {
+    tb.innerHTML = '<tr><td class="empty-row" colspan="5">Sin registros con estos filtros</td></tr>';
+    return;
+  }
+  tb.innerHTML = lista.map(r => `
+    <tr onclick="abrirDetalle(todos.find(x=>x.id==='${r.id}'))"
+        class="${actual?.id === r.id ? 'selected' : ''}">
+      <td>
+        <strong>${esc(r.nombres) || '—'}</strong>
+        <br/><span style="font-size:.75rem;color:#6b7280">${esc(r.documento) || ''}</span>
+      </td>
+      <td><span class="badge b-${r.tipo_persona}">${r.tipo_persona === 'natural' ? 'Natural' : 'Jurídica'}</span></td>
+      <td>${esc(r.ciudad) || '—'}</td>
+      <td style="font-size:.78rem;color:#6b7280">${fFecha(r.created_at)}</td>
+      <td><span class="badge b-${(r.estado_sagrilaft||'').toLowerCase()}">${r.estado_sagrilaft || '—'}</span></td>
+    </tr>`).join('');
+}
+
+// ── DETALLE ──────────────────────────────────────────────────────
+async function abrirDetalle(reg) {
+  if (!reg) return;
+  actual = reg;
+  filtrar(); // re-render tabla para marcar selected
+
+  // Fetchear datos frescos con signed URLs desde el backend
+  try {
+    const r = await fetch(`${API}/sagrilaft/${reg.id}`);
+    if (r.ok) {
+      const fresh = await r.json();
+      actual = fresh;
+      // Actualizar también en el array local para que la tabla refleje el estado
+      const idx = todos.findIndex(x => x.id === fresh.id);
+      if (idx >= 0) todos[idx] = fresh;
+      reg = fresh;
+    }
+  } catch (_) { /* usar datos existentes si el fetch falla */ }
+
+  document.getElementById('dpTitle').textContent = reg.nombres || 'Sin nombre';
+  document.getElementById('panel').classList.add('open');
+
+  document.getElementById('dpBody').innerHTML = `
+
+    <div class="ds">
+      <div class="ds-title">Estado Actual</div>
+      <span class="badge b-${(reg.estado_sagrilaft||'').toLowerCase()}" style="font-size:.82rem;padding:4px 14px">${reg.estado_sagrilaft||'—'}</span>
+      <span style="font-size:.78rem;color:#6b7280;margin-left:10px">${fFecha(reg.created_at)}</span>
+    </div>
+
+    <div class="ds">
+      <div class="ds-title">Datos del Interesado</div>
+      <div class="dg">
+        <div class="df full"><span class="k">Nombre</span><span class="v">${esc(reg.nombres)||'—'}</span></div>
+        <div class="df"><span class="k">Tipo persona</span><span class="v">${reg.tipo_persona==='natural'?'Natural':'Jurídica'}</span></div>
+        <div class="df"><span class="k">Documento</span><span class="v">${esc(reg.documento)||'—'}</span></div>
+        <div class="df"><span class="k">Email</span><span class="v">${esc(reg.email)||'—'}</span></div>
+        <div class="df"><span class="k">Teléfono</span><span class="v">${esc(reg.telefono)||'—'}</span></div>
+        <div class="df"><span class="k">Ciudad</span><span class="v">${esc(reg.ciudad)||'—'}</span></div>
+        <div class="df"><span class="k">Nivel estudios</span><span class="v">${esc(reg.nivel_estudios)||'—'}</span></div>
+        <div class="df"><span class="k">Es PEP</span><span class="v">${reg.es_pep===true?'Sí':reg.es_pep===false?'No':'—'}</span></div>
+        <div class="df"><span class="k">Años experiencia</span><span class="v">${reg.anios_experiencia??'—'}</span></div>
+        <div class="df"><span class="k">Negocios cerrados</span><span class="v">${reg.negocios_cerrados??'—'}</span></div>
+        <div class="df full"><span class="k">Origen de fondos</span><span class="v">${esc(reg.origen_fondos)||'—'}</span></div>
+      </div>
+    </div>
+
+    <div class="ds">
+      <div class="ds-title">Información Financiera</div>
+      <div class="dg">
+        <div class="df"><span class="k">Ingresos</span><span class="v">${fCOP(reg.ingresos)}</span></div>
+        <div class="df"><span class="k">Egresos</span><span class="v">${fCOP(reg.egresos)}</span></div>
+        <div class="df"><span class="k">Activos</span><span class="v">${fCOP(reg.activos)}</span></div>
+        <div class="df"><span class="k">Pasivos</span><span class="v">${fCOP(reg.pasivos)}</span></div>
+      </div>
+    </div>
+
+    <div class="ds">
+      <div class="ds-title">Documentos</div>
+      <div class="dg">
+        <div class="df"><span class="k">RUT</span><span class="v">${docLink(reg.url_rut)}</span></div>
+        <div class="df"><span class="k">Cédula / ID</span><span class="v">${docLink(reg.url_cedula)}</span></div>
+        <div class="df"><span class="k">Decl. Renta</span><span class="v">${docLink(reg.url_declaracion_renta)}</span></div>
+        <div class="df"><span class="k">Cámara Comercio</span><span class="v">${docLink(reg.url_camara_comercio)}</span></div>
+        <div class="df"><span class="k">Comp. Accionaria</span><span class="v">${docLink(reg.url_composicion_accionaria)}</span></div>
+        <div class="df full"><span class="k">Reporte tusdatos.co</span><span class="v">${docLink(reg.url_tusdatos_report)}</span></div>
+      </div>
+    </div>
+
+    ${reg.observaciones_julio ? `
+    <div class="ds">
+      <div class="ds-title">Observaciones de Julio</div>
+      <p style="font-size:.85rem;color:#374151;line-height:1.55;white-space:pre-wrap">${esc(reg.observaciones_julio)}</p>
+    </div>` : ''}
+
+    ${(reg.estado_sagrilaft === 'APROBADO' || reg.estado_sagrilaft === 'RECHAZADO') ? renderEval(reg) : ''}
+  `;
+
+  const evaluado = reg.estado_sagrilaft === 'APROBADO' || reg.estado_sagrilaft === 'RECHAZADO';
+  document.getElementById('dpActions').innerHTML = evaluado ? `
+    <label class="obs-label">Observaciones</label>
+    <textarea class="obs-ta" readonly>${esc(reg.observaciones_julio)||''}</textarea>
+    <p style="font-size:.78rem;color:#6b7280;text-align:center;padding:8px 0;font-style:italic">
+      Evaluación completada automáticamente
+    </p>` : `
+    <label class="obs-label">Observaciones <span style="font-weight:400;color:#9ca3af">(opcional)</span></label>
+    <textarea class="obs-ta" id="obsTa" placeholder="Observaciones para el expediente…"></textarea>
+    <div style="margin-top:10px;">
+      <div class="obs-label" style="margin-bottom:5px;">
+        Reporte tusdatos.co <span style="color:var(--red)">*</span>
+      </div>
+      <label class="file-upload-zone" onclick="document.getElementById('fileTusdatos').click()">
+        <span>📎</span>
+        <span id="tusdatosNombre">Seleccionar PDF de tusdatos.co…</span>
+        <input type="file" id="fileTusdatos" accept=".pdf" onchange="onTusdatosSeleccionado()"/>
+      </label>
+      <p style="font-size:.72rem;color:#6b7280;margin-top:3px;">El sistema calculará la evaluación GCOM-FT009 al subir</p>
+    </div>
+    <button class="btn-evaluar" id="btnEvaluar" onclick="evaluarConTusdatos('${reg.id}')" disabled>
+      📊 Subir reporte y evaluar
+    </button>`;
+}
+
+function renderEval(reg) {
+  const anios = reg.anios_experiencia || 0;
+  const habs = [
+    { label: 'Documento de identidad / Cámara de Comercio', ok: !!reg.documento },
+    { label: 'Inscripción en RUT',                          ok: !!reg.url_rut },
+    { label: 'Experiencia comercial ≥ 4 años',              ok: anios >= 4 },
+    { label: 'Reporte tusdatos.co subido',                  ok: !!reg.url_tusdatos_report },
+  ];
+  const todosOk = habs.every(h => h.ok);
+  const total   = reg.puntaje_total || 0;
+  const result  = reg.resultado_evaluacion || '—';
+  const esApro  = result === 'APROBADO';
+
+  return `
+  <div class="ds">
+    <div class="ds-title">Evaluación GCOM-FT009</div>
+    <div class="eval-box">
+      <div class="eval-box-title">📋 Requisitos Habilitantes</div>
+      ${habs.map(h => `
+        <div class="hab-item ${h.ok?'hab-ok':'hab-fail'}">
+          <span>${h.ok?'✅':'❌'}</span><span>${h.label}</span>
+        </div>`).join('')}
+
+      <div style="border-top:1px solid #bae6fd;margin:10px 0 8px;padding-top:8px;">
+        <div class="eval-box-title">📊 Puntaje Ponderado</div>
+        ${sRow('Formación Académica (20%)',    reg.puntaje_formacion,  20)}
+        ${sRow('Experiencia Comercial (30%)',  reg.puntaje_experiencia,30)}
+        ${sRow('Competencias Digitales (20%)', reg.puntaje_digital,    10)}
+        ${sRow('Desempeño Comercial (30%)',    reg.puntaje_desempeno,  30)}
+      </div>
+
+      <div class="eval-total ${esApro?'eval-apro':'eval-noap'}">
+        ${esApro?'✅ APROBADO':'❌ NO APROBADO'} — Puntaje: ${total} / 90
+        ${!esApro ? `<br/><span style="font-size:.75rem;font-weight:500;">${
+          !todosOk
+            ? 'No cumple todos los requisitos habilitantes'
+            : `Puntaje insuficiente (${total}/90, se requiere ≥60)`
+        }</span>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function sRow(label, pts, max) {
+  const v   = pts || 0;
+  const pct = max ? Math.min((v / max) * 100, 100) : 0;
+  return `
+  <div class="score-row">
+    <span class="score-lbl">${label}</span>
+    <div class="score-bar"><div class="score-fill" style="width:${pct}%"></div></div>
+    <span class="score-pts">${v}</span>
+  </div>`;
+}
+
+function cerrar() {
+  actual = null;
+  document.getElementById('panel').classList.remove('open');
+  filtrar();
+}
+
+// ── ACCIONES ─────────────────────────────────────────────────────
+
+function onTusdatosSeleccionado() {
+  const file = document.getElementById('fileTusdatos')?.files?.[0];
+  const nombre = document.getElementById('tusdatosNombre');
+  const btn = document.getElementById('btnEvaluar');
+  if (file) {
+    nombre.textContent = file.name;
+    nombre.classList.add('file-selected');
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function evaluarConTusdatos(id) {
+  const file = document.getElementById('fileTusdatos')?.files?.[0];
+  if (!file) { toast('Debe seleccionar el reporte PDF de tusdatos.co', 'err'); return; }
+
+  const obs = document.getElementById('obsTa')?.value || '';
+  setBusy('btnEvaluar', true);
+
+  const fd = new FormData();
+  fd.append('file_tusdatos', file);
+  if (obs) fd.append('observaciones_julio', obs);
+
+  try {
+    // Un solo endpoint: sube tusdatos, calcula GCOM-FT009 y guarda el estado
+    const r = await fetch(`${API}/sagrilaft/${id}/revision`, { method: 'PUT', body: fd });
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || r.statusText);
+    const resultado = await r.json();
+    const esApro = resultado.resultado_evaluacion === 'APROBADO';
+    toast(`Evaluación completada: ${esApro ? '✅ APROBADO' : '❌ NO APROBADO'} (${resultado.puntaje_total ?? '—'} pts)`, esApro ? 'ok' : 'err');
+    await cargar();
+  } catch (e) {
+    toast('Error: ' + e.message, 'err');
+    setBusy('btnEvaluar', false);
+  }
+}
+
+function setBusy(id, on) {
+  const b = document.getElementById(id);
+  if (!b) return;
+  b.disabled = on;
+  if (on) { b._t = b.innerHTML; b.innerHTML = '<span class="spin"></span>'; }
+  else b.innerHTML = b._t || b.innerHTML;
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function fFecha(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+}
+function fCOP(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  return new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', maximumFractionDigits:0 }).format(v);
+}
+function docLink(url) {
+  if (!url) return '<span style="color:#9ca3af;font-size:.8rem">Sin archivo</span>';
+  return `<a href="${url}" target="_blank" rel="noopener" style="color:var(--navy);font-size:.82rem;font-weight:600;margin-right:10px">Ver ↗</a><a href="${url}" download target="_blank" rel="noopener" style="color:#6b7280;font-size:.78rem;font-weight:500">Descargar</a>`;
+}
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let _tt;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(_tt);
+  _tt = setTimeout(() => { el.className = ''; }, 3500);
+}
+</script>
+</body>
+</html>
