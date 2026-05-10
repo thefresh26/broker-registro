@@ -1144,7 +1144,7 @@ async function submitForm() {
 
   try {
     // Sin Content-Type: el navegador lo establece automáticamente con el boundary correcto
-    const res = await fetch('http://localhost:8000/sagrilaft', {
+    const res = await fetch('https://broker-registro.onrender.com/sagrilaft', {
       method: 'POST',
       body: fd,
     });
@@ -1160,7 +1160,7 @@ async function submitForm() {
     }
   } catch (e) {
     document.getElementById('overlayLoading').style.display = 'none';
-    alert('No se pudo conectar al servidor. Verifique que el backend esté activo en localhost:8000.');
+    alert('No se pudo conectar al servidor. Verifique que el backend esté activo en broker-registro.onrender.com.');
   }
 }
 </script>
