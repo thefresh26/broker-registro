@@ -5,6 +5,97 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Panel Admin SAGRILAFT — Activos por Colombia</title>
   <style>
+    /* ── LOGIN OVERLAY ── */
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      background: #0d1f35;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .login-card {
+      background: #1a3355;
+      border-radius: 14px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.5);
+      text-align: center;
+    }
+    .login-logo {
+      font-size: 2rem;
+      margin-bottom: .5rem;
+    }
+    .login-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #f6a713;
+      margin-bottom: .25rem;
+      letter-spacing: .02em;
+    }
+    .login-sub {
+      font-size: .8rem;
+      color: #93aac7;
+      margin-bottom: 1.75rem;
+    }
+    .login-field {
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+    .login-field label {
+      font-size: .75rem;
+      font-weight: 700;
+      color: #93aac7;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .login-field input {
+      background: #0d1f35;
+      border: 1.5px solid #2d4a6e;
+      border-radius: 7px;
+      padding: .65rem .85rem;
+      font-size: .92rem;
+      color: #fff;
+      width: 100%;
+      transition: border-color .15s;
+    }
+    .login-field input:focus {
+      outline: none;
+      border-color: #f6a713;
+    }
+    .login-field input::placeholder { color: #4a6580; }
+    .btn-login {
+      width: 100%;
+      margin-top: .5rem;
+      background: #f6a713;
+      color: #0d1f35;
+      border: none;
+      border-radius: 8px;
+      padding: .8rem;
+      font-size: .95rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      letter-spacing: .02em;
+    }
+    .btn-login:hover { background: #e09600; }
+    .btn-login:active { transform: scale(.98); }
+    .login-error {
+      margin-top: .9rem;
+      background: rgba(215,14,39,.15);
+      border: 1px solid #d70e27;
+      color: #ff6b7a;
+      border-radius: 7px;
+      padding: .6rem .9rem;
+      font-size: .83rem;
+      display: none;
+    }
+
     :root {
       --navy:  #1a3355;
       --navy2: #254a7d;
@@ -405,6 +496,29 @@
 
 </div>
 
+<!-- ── LOGIN OVERLAY ── -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">🔐</div>
+    <div class="login-title">Panel Admin</div>
+    <div class="login-sub">Activos por Colombia — Acceso restringido</div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="login-field">
+        <label>Usuario</label>
+        <input type="text" id="loginUser" placeholder="Usuario" autocomplete="username" autofocus/>
+      </div>
+      <div class="login-field">
+        <label>Contraseña</label>
+        <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password"/>
+      </div>
+      <button type="submit" class="btn-login">Ingresar</button>
+    </form>
+
+    <div class="login-error" id="loginError">Credenciales incorrectas</div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -412,8 +526,33 @@ const API = 'https://broker-registro.onrender.com';
 let todos = [];
 let actual = null;
 
+// ── LOGIN ─────────────────────────────────────────────────────────
+(function initLogin() {
+  if (sessionStorage.getItem('admin_auth') === 'ok') {
+    document.getElementById('loginOverlay').style.display = 'none';
+    cargar();
+  }
+})();
+
+function handleLogin(e) {
+  e.preventDefault();
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+
+  if (user === 'julio' && pass === 'activos2024') {
+    sessionStorage.setItem('admin_auth', 'ok');
+    document.getElementById('loginOverlay').style.display = 'none';
+    errEl.style.display = 'none';
+    cargar();
+  } else {
+    errEl.style.display = 'block';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+
 // ── INIT ─────────────────────────────────────────────────────────
-cargar();
 
 async function cargar() {
   const btn = document.getElementById('btnRefresh');
