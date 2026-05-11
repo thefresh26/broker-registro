@@ -749,11 +749,13 @@ async function abrirDetalle(reg) {
         Reporte tusdatos.co <span style="color:var(--red)">*</span>
         <span style="font-weight:400;color:#9ca3af"> — requerido para aprobar</span>
       </div>
-      <label class="file-upload-zone" onclick="document.getElementById('fileTusdatos').click()">
-        <span>📎</span>
-        <span id="tusdatosNombre">Seleccionar PDF de tusdatos.co…</span>
-        <input type="file" id="fileTusdatos" accept=".pdf" onchange="onTusdatosSeleccionado()"/>
-      </label>
+      <div id="zonaUpload">
+        <label class="file-upload-zone">
+          <span>📎</span>
+          <span id="tusdatosNombre">Seleccionar PDF de tusdatos.co…</span>
+          <input type="file" id="fileTusdatos" accept=".pdf" onchange="onTusdatosSeleccionado()"/>
+        </label>
+      </div>
     </div>
 
     <div class="act-btns" style="margin-top:12px;">
@@ -832,18 +834,48 @@ function cerrar() {
 // ── ACCIONES ─────────────────────────────────────────────────────
 
 function onTusdatosSeleccionado() {
-  const file = document.getElementById('fileTusdatos')?.files?.[0];
-  const nombre = document.getElementById('tusdatosNombre');
-  const btn = document.getElementById('btnEvaluar');
-  if (file) {
-    nombre.textContent = file.name;
-    nombre.classList.add('file-selected');
-    if (btn) btn.disabled = false;
+  const input = document.getElementById('fileTusdatos');
+  const file  = input?.files?.[0];
+  const btn   = document.getElementById('btnEvaluar');
+  if (!file) return;
+
+  // Reemplazar la zona por un indicador de archivo seleccionado (no se resetea)
+  const zona = document.getElementById('zonaUpload');
+  if (zona) {
+    zona.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;
+                  background:#f0fdf4;border:1.5px solid #86efac;border-radius:7px;">
+        <span style="color:#16a34a;font-size:1rem">✅</span>
+        <span style="color:#15803d;font-weight:600;font-size:.82rem;flex:1;
+                     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+              title="${esc(file.name)}">${esc(file.name)}</span>
+        <button type="button" onclick="resetTusdatos()"
+                style="background:none;border:none;color:#6b7280;font-size:.75rem;
+                       cursor:pointer;padding:2px 6px;flex-shrink:0;">✕ Cambiar</button>
+      </div>`;
+    // Conservar el File en una variable global para que evaluarConTusdatos pueda leerlo
+    window._tusdatosFile = file;
   }
+  if (btn) btn.disabled = false;
+}
+
+function resetTusdatos() {
+  window._tusdatosFile = null;
+  const zona = document.getElementById('zonaUpload');
+  if (zona) {
+    zona.innerHTML = `
+      <label class="file-upload-zone">
+        <span>📎</span>
+        <span id="tusdatosNombre">Seleccionar PDF de tusdatos.co…</span>
+        <input type="file" id="fileTusdatos" accept=".pdf" onchange="onTusdatosSeleccionado()"/>
+      </label>`;
+  }
+  const btn = document.getElementById('btnEvaluar');
+  if (btn) btn.disabled = true;
 }
 
 async function evaluarConTusdatos(id) {
-  const file = document.getElementById('fileTusdatos')?.files?.[0];
+  const file = window._tusdatosFile || document.getElementById('fileTusdatos')?.files?.[0];
   if (!file) { toast('Debe seleccionar el reporte PDF de tusdatos.co', 'err'); return; }
 
   const obs = document.getElementById('obsTa')?.value || '';
