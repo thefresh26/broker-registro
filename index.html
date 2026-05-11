@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Registro de Broker — Activos por Colombia</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4f8;
+      color: #1f2937;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      width: 100%;
+      max-width: 700px;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    header h1 { font-size: 1.6rem; color: #1a3355; font-weight: 800; }
+    header p  { font-size: .9rem; color: #6b7280; margin-top: .4rem; }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.09);
+      width: 100%;
+      max-width: 700px;
+      padding: 2rem 1.75rem;
+    }
+
+    /* tipo persona */
+    .tipo-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .tipo-option {
+      border: 2px solid #d1d5db;
+      border-radius: 9px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+    .tipo-option input[type=radio] { accent-color: #1a3355; }
+    .tipo-option:has(input:checked) { border-color: #1a3355; background: #f0f4ff; }
+    .tipo-label-main { font-weight: 700; font-size: .95rem; color: #1a3355; }
+    .tipo-label-sub  { font-size: .78rem; color: #6b7280; }
+
+    /* secciones */
+    .section-block { margin-bottom: 1.5rem; }
+    .section-title {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #1a3355;
+      border-bottom: 2px solid #e8eef8;
+      padding-bottom: .35rem;
+      margin-bottom: 1rem;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: .3rem; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    label { font-size: .8rem; font-weight: 600; color: #374151; }
+    label .req { color: #d70e27; margin-left: 2px; }
+
+    input, select, textarea {
+      border: 1.5px solid #d1d5db;
+      border-radius: 7px;
+      padding: .5rem .75rem;
+      font-size: .88rem;
+      color: #1f2937;
+      background: #f9fafb;
+      width: 100%;
+      transition: border-color .15s;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #1a3355;
+      background: #fff;
+    }
+    textarea { resize: vertical; min-height: 72px; }
+
+    /* file inputs */
+    .file-zone {
+      border: 2px dashed #c7d2e0;
+      border-radius: 7px;
+      padding: .6rem .85rem;
+      background: #f5f8fc;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      transition: border-color .15s;
+    }
+    .file-zone:hover { border-color: #1a3355; }
+    .file-zone input[type=file] { display: none; }
+    .file-zone-name { font-size: .82rem; color: #6b7280; }
+    .file-zone-name.selected { color: #1a3355; font-weight: 600; }
+    .file-hint { font-size: .72rem; color: #9ca3af; margin-top: .2rem; }
+
+    /* persona jurídica fields */
+    #camposJuridica { display: none; }
+    #camposNatural  { display: block; }
+
+    /* submit */
+    .btn-submit {
+      width: 100%;
+      margin-top: 1.5rem;
+      background: #1a3355;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: .9rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+    }
+    .btn-submit:hover:not(:disabled) { background: #254a7d; }
+    .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    .spin {
+      width: 18px; height: 18px;
+      border: 3px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* alerts */
+    .alert {
+      margin-top: 1.25rem;
+      border-radius: 8px;
+      padding: .9rem 1.1rem;
+      font-size: .88rem;
+      display: none;
+    }
+    .alert.ok  { background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #065f46; }
+    .alert.err { background: #fef2f2; border: 1.5px solid #fca5a5; color: #991b1b; }
+
+    @media (max-width: 560px) {
+      .form-grid, .tipo-row { grid-template-columns: 1fr; }
+      .card { padding: 1.25rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Registro de Broker</h1>
+  <p>Complete el formulario para iniciar el proceso de vinculación con Activos por Colombia.<br/>
+     Los campos marcados con <span style="color:#d70e27">*</span> son obligatorios.</p>
+</header>
+
+<div class="card">
+  <form id="brokerForm" novalidate>
+
+    <!-- TIPO DE PERSONA -->
+    <div class="section-block">
+      <div class="section-title">Tipo de Persona</div>
+      <div class="tipo-row">
+        <label class="tipo-option">
+          <input type="radio" name="tipo_persona" value="natural" checked onchange="setTipo('natural')"/>
+          <div>
+            <div class="tipo-label-main">Persona Natural</div>
+            <div class="tipo-label-sub">Registro individual</div>
+          </div>
+        </label>
+        <label class="tipo-option">
+          <input type="radio" name="tipo_persona" value="juridica" onchange="setTipo('juridica')"/>
+          <div>
+            <div class="tipo-label-main">Persona Jurídica</div>
+            <div class="tipo-label-sub">Registro empresarial</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- PERSONA NATURAL -->
+    <div id="camposNatural">
+      <div class="section-block">
+        <div class="section-title">Datos Personales</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nombres <span class="req">*</span></label>
+            <input type="text" name="nombres" placeholder="Nombres completos"/>
+          </div>
+          <div class="form-group">
+            <label>Apellidos <span class="req">*</span></label>
+            <input type="text" name="apellidos" placeholder="Apellidos completos"/>
+          </div>
+          <div class="form-group">
+            <label>Tipo de documento <span class="req">*</span></label>
+            <select name="tipo_identificacion">
+              <option value="">Seleccione…</option>
+              <option value="CC">Cédula de Ciudadanía</option>
+              <option value="CE">Cédula de Extranjería</option>
+              <option value="PA">Pasaporte</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Número de documento <span class="req">*</span></label>
+            <input type="text" name="numero_identificacion" placeholder="Ej: 1234567890"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERSONA JURÍDICA -->
+    <div id="camposJuridica">
+      <div class="section-block">
+        <div class="section-title">Datos de la Empresa</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Razón social <span class="req">*</span></label>
+            <input type="text" name="razon_social" placeholder="Nombre completo de la empresa"/>
+          </div>
+          <div class="form-group">
+            <label>NIT <span class="req">*</span></label>
+            <input type="text" name="nit" placeholder="Ej: 900123456-7"/>
+          </div>
+          <div class="form-group">
+            <label>Representante Legal <span class="req">*</span></label>
+            <input type="text" name="representante_legal" placeholder="Nombre completo"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTACTO -->
+    <div class="section-block">
+      <div class="section-title">Información de Contacto</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Correo electrónico <span class="req">*</span></label>
+          <input type="email" name="email" placeholder="correo@ejemplo.com"/>
+        </div>
+        <div class="form-group">
+          <label>Teléfono / Celular <span class="req">*</span></label>
+          <input type="tel" name="telefono" placeholder="Ej: 3001234567"/>
+        </div>
+        <div class="form-group full">
+          <label>Ciudad de operación <span class="req">*</span></label>
+          <input type="text" name="ciudad" placeholder="Ciudad principal donde opera"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPERIENCIA -->
+    <div class="section-block">
+      <div class="section-title">Perfil Profesional</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Años de experiencia comercial <span class="req">*</span></label>
+          <select name="experiencia">
+            <option value="">Seleccione…</option>
+            <option value="menos_1">Menos de 1 año</option>
+            <option value="1_3">1 – 3 años</option>
+            <option value="4_7">4 – 7 años</option>
+            <option value="8_14">8 – 14 años</option>
+            <option value="15_24">15 – 24 años</option>
+            <option value="25_mas">25 años o más</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Nivel de formación <span class="req">*</span></label>
+          <select name="formacion">
+            <option value="">Seleccione…</option>
+            <option value="primaria">Primaria</option>
+            <option value="secundaria">Secundaria</option>
+            <option value="tecnico">Técnico</option>
+            <option value="tecnologo">Tecnólogo</option>
+            <option value="profesional">Profesional</option>
+            <option value="especializacion">Especialización</option>
+            <option value="maestria">Maestría</option>
+            <option value="doctorado">Doctorado</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOCUMENTOS -->
+    <div class="section-block">
+      <div class="section-title">Documentos Requeridos</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Documento de identidad <span class="req">*</span></label>
+          <label class="file-zone" onclick="document.getElementById('fi_identidad').click()">
+            📎 <span class="file-zone-name" id="fn_identidad">Seleccionar PDF o imagen…</span>
+            <input type="file" id="fi_identidad" name="doc_identidad" accept=".pdf,.jpg,.jpeg,.png"
+                   onchange="showFile(this,'fn_identidad')"/>
+          </label>
+          <span class="file-hint">PDF, JPG o PNG — máx. 10 MB</span>
+        </div>
+        <div class="form-group">
+          <label>RUT <span class="req">*</span></label>
+          <label class="file-zone" onclick="document.getElementById('fi_rut').click()">
+            📎 <span class="file-zone-name" id="fn_rut">Seleccionar PDF…</span>
+            <input type="file" id="fi_rut" name="doc_rut" accept=".pdf"
+                   onchange="showFile(this,'fn_rut')"/>
+          </label>
+          <span class="file-hint">PDF — máx. 10 MB</span>
+        </div>
+        <div class="form-group">
+          <label>Estados financieros</label>
+          <label class="file-zone" onclick="document.getElementById('fi_financiero').click()">
+            📎 <span class="file-zone-name" id="fn_financiero">Seleccionar archivo…</span>
+            <input type="file" id="fi_financiero" name="doc_financiero" accept=".pdf,.xlsx,.xls"
+                   onchange="showFile(this,'fn_financiero')"/>
+          </label>
+          <span class="file-hint">PDF o Excel — máx. 10 MB</span>
+        </div>
+        <div class="form-group">
+          <label>Hoja de vida</label>
+          <label class="file-zone" onclick="document.getElementById('fi_hoja').click()">
+            📎 <span class="file-zone-name" id="fn_hoja">Seleccionar archivo…</span>
+            <input type="file" id="fi_hoja" name="doc_hoja_vida" accept=".pdf,.doc,.docx"
+                   onchange="showFile(this,'fn_hoja')"/>
+          </label>
+          <span class="file-hint">PDF o Word — máx. 10 MB</span>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit" id="btnSubmit">
+      Enviar Registro
+    </button>
+
+  </form>
+
+  <div class="alert ok"  id="alertOk"></div>
+  <div class="alert err" id="alertErr"></div>
+</div>
+
+<script>
+  const API = 'https://broker-registro.onrender.com';
+
+  function setTipo(tipo) {
+    document.getElementById('camposNatural').style.display  = tipo === 'natural'  ? 'block' : 'none';
+    document.getElementById('camposJuridica').style.display = tipo === 'juridica' ? 'block' : 'none';
+  }
+
+  function showFile(input, labelId) {
+    const el = document.getElementById(labelId);
+    if (input.files[0]) {
+      el.textContent = input.files[0].name;
+      el.classList.add('selected');
+    }
+  }
+
+  function showAlert(type, msg) {
+    document.getElementById('alertOk').style.display  = 'none';
+    document.getElementById('alertErr').style.display = 'none';
+    const el = document.getElementById(type === 'ok' ? 'alertOk' : 'alertErr');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  document.getElementById('brokerForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmit');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spin"></div> Enviando…';
+
+    const fd = new FormData();
+    const tipo = document.querySelector('input[name="tipo_persona"]:checked').value;
+
+    const textFields = [
+      'tipo_persona','email','telefono','ciudad','experiencia','formacion',
+      'nombres','apellidos','tipo_identificacion','numero_identificacion',
+      'razon_social','nit','representante_legal'
+    ];
+    textFields.forEach(f => {
+      const el = document.querySelector(`[name="${f}"]`);
+      if (el && el.value.trim()) fd.append(f, el.value.trim());
+    });
+
+    // Añadir tipo_persona explícitamente (viene de radio)
+    if (!fd.has('tipo_persona')) fd.append('tipo_persona', tipo);
+
+    const fileFields = ['doc_identidad','doc_rut','doc_financiero','doc_hoja_vida'];
+    fileFields.forEach(f => {
+      const el = document.querySelector(`[name="${f}"]`);
+      if (el && el.files[0]) fd.append(f, el.files[0]);
+    });
+
+    try {
+      const res = await fetch(`${API}/brokers`, { method: 'POST', body: fd });
+      if (res.ok) {
+        showAlert('ok', '✅ Registro enviado exitosamente. Nos pondremos en contacto con usted pronto.');
+        e.target.reset();
+        document.querySelectorAll('.file-zone-name').forEach(el => {
+          el.textContent = el.closest('.file-zone')?.nextElementSibling?.previousElementSibling?.textContent || 'Seleccionar archivo…';
+          el.classList.remove('selected');
+        });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        const msg = Array.isArray(data.detail)
+          ? data.detail.map(d => d.msg || JSON.stringify(d)).join(' | ')
+          : (data.detail || res.statusText);
+        showAlert('err', `Error ${res.status}: ${msg}`);
+      }
+    } catch (err) {
+      showAlert('err', 'No se pudo conectar con el servidor. Intente nuevamente en unos momentos.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Enviar Registro';
+    }
+  });
+</script>
+</body>
+</html>
