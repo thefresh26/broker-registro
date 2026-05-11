@@ -5,7 +5,6 @@ import requests as http
 from dotenv import load_dotenv
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from models import SagrilaftRevision  # usado en models.py; revision endpoint ahora usa Form
 
 load_dotenv()
 
@@ -26,17 +25,6 @@ FORMACION_INMOBILIARIA_MAP = {
     "tecnico_inmobiliario":    10,
     "profesional_inmobiliario": 20,
     "posgrado_inmobiliario":   30,
-}
-
-FORMACION_MAP = {
-    "primaria": 20,
-    "secundaria": 30,
-    "tecnico": 50,
-    "tecnologo": 55,
-    "profesional": 70,
-    "especializacion": 80,
-    "maestria": 90,
-    "doctorado": 100,
 }
 
 
