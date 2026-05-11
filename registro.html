@@ -420,11 +420,7 @@
       const res = await fetch(`${API}/brokers`, { method: 'POST', body: fd });
       if (res.ok) {
         showAlert('ok', '✅ Registro enviado exitosamente. Nos pondremos en contacto con usted pronto.');
-        e.target.reset();
-        document.querySelectorAll('.file-zone-name').forEach(el => {
-          el.textContent = el.closest('.file-zone')?.nextElementSibling?.previousElementSibling?.textContent || 'Seleccionar archivo…';
-          el.classList.remove('selected');
-        });
+        setTimeout(() => window.location.reload(), 3000);
       } else {
         const data = await res.json().catch(() => ({}));
         const msg = Array.isArray(data.detail)
