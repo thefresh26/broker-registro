@@ -148,20 +148,28 @@ def _guardar_docs(sagrilaft_id: str, urls: dict) -> None:
 
 def _calcular_evaluacion(data: dict) -> dict:
     anios = data.get("anios_experiencia") or 0
+    neg   = data.get("negocios_cerrados") or 0
 
+    # Requisitos habilitantes — determinan APROBADO/NO_APROBADO
     tipo = (data.get("tipo_persona") or "natural").lower()
-    if tipo == "juridica":
-        req_documento = bool(data.get("url_camara_comercio"))
-    else:
-        req_documento = bool(data.get("url_cedula"))
-    req_rut = bool(data.get("url_rut"))
+    req_documento  = bool(data.get("url_camara_comercio") if tipo == "juridica" else data.get("url_cedula"))
+    req_rut        = bool(data.get("url_rut"))
     req_experiencia = anios >= 4
-    req_tusdatos = bool(data.get("url_tusdatos_report"))
+    req_tusdatos   = bool(data.get("url_tusdatos_report"))
     todos_habilitantes = req_documento and req_rut and req_experiencia and req_tusdatos
 
-    resultado = "APROBADO" if todos_habilitantes else "NO_APROBADO"
+    # Puntaje de referencia informativo (sin Formación Académica) — máx 80%
+    pts_exp = 100 if anios >= 25 else 75 if anios >= 15 else 50 if anios >= 4 else 0
+    pts_dig = 50  # base fija
+    pts_des = 100 if neg >= 30 else 80 if neg >= 20 else 60 if neg >= 10 else 40 if neg >= 5 else 20 if neg >= 1 else 0
 
-    return {"resultado_evaluacion": resultado}
+    return {
+        "puntaje_experiencia": round(pts_exp * 0.30, 1),
+        "puntaje_digital":     round(pts_dig * 0.20, 1),
+        "puntaje_desempeno":   round(pts_des * 0.30, 1),
+        "puntaje_total":       round(pts_exp * 0.30 + pts_dig * 0.20 + pts_des * 0.30, 1),
+        "resultado_evaluacion": "APROBADO" if todos_habilitantes else "NO_APROBADO",
+    }
 
 
 # ──────────────────────────────────────────────────────────────
