@@ -735,16 +735,32 @@ async function abrirDetalle(reg) {
     </div>
     <button class="btn-evaluar" id="btnEvaluar" onclick="evaluarConTusdatos('${reg.id}')" disabled>
       📊 Subir reporte y evaluar
-    </button>`;
+    </button>
+
+    <div style="margin-top:14px;border-top:1px solid #e2e8f0;padding-top:12px;">
+      <p style="font-size:.75rem;color:#9ca3af;margin-bottom:8px;text-align:center;">O decidir manualmente:</p>
+      <div class="act-btns">
+        <button class="btn-aprobar" id="btnAprobar" onclick="aprobarManual('${reg.id}')">
+          ✓ Aprobar
+        </button>
+        <button class="btn-rechazar" id="btnRechazar" onclick="rechazarManual('${reg.id}')">
+          ✕ Rechazar
+        </button>
+      </div>
+    </div>`;
 }
 
 function renderEval(reg) {
   const anios = reg.anios_experiencia || 0;
+  const esJuridica = reg.tipo_persona === 'juridica';
   const habs = [
-    { label: 'Documento de identidad / Cámara de Comercio', ok: !!reg.documento },
-    { label: 'Inscripción en RUT',                          ok: !!reg.url_rut },
-    { label: 'Experiencia comercial ≥ 4 años',              ok: anios >= 4 },
-    { label: 'Reporte tusdatos.co subido',                  ok: !!reg.url_tusdatos_report },
+    {
+      label: esJuridica ? 'Cámara de Comercio subida' : 'Cédula de Ciudadanía subida',
+      ok: esJuridica ? !!reg.url_camara_comercio : !!reg.url_cedula,
+    },
+    { label: 'Inscripción en RUT',              ok: !!reg.url_rut },
+    { label: 'Experiencia comercial ≥ 4 años',  ok: anios >= 4 },
+    { label: 'Reporte tusdatos.co subido',       ok: !!reg.url_tusdatos_report },
   ];
   const todosOk = habs.every(h => h.ok);
   const total   = reg.puntaje_total || 0;
@@ -833,6 +849,47 @@ async function evaluarConTusdatos(id) {
   } catch (e) {
     toast('Error: ' + e.message, 'err');
     setBusy('btnEvaluar', false);
+  }
+}
+
+const MOTIVO_RECHAZO = 'El registro fue rechazado porque no se encontró al broker en las listas de SAGRILAFT.';
+
+async function aprobarManual(id) {
+  const obs = document.getElementById('obsTa')?.value || '';
+  setBusy('btnAprobar', true);
+  const fd = new FormData();
+  fd.append('estado_sagrilaft', 'APROBADO');
+  if (obs) fd.append('observaciones_julio', obs);
+  try {
+    const r = await fetch(`${API}/sagrilaft/${id}/revision`, { method: 'PUT', body: fd });
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || r.statusText);
+    toast('Registro aprobado', 'ok');
+    await cargar();
+  } catch (e) {
+    toast('Error: ' + e.message, 'err');
+    setBusy('btnAprobar', false);
+  }
+}
+
+async function rechazarManual(id) {
+  if (!confirm('¿Está seguro de rechazar este registro?')) return;
+
+  // Pre-llenar el textarea con el motivo estándar
+  const ta = document.getElementById('obsTa');
+  if (ta) ta.value = MOTIVO_RECHAZO;
+
+  setBusy('btnRechazar', true);
+  const fd = new FormData();
+  fd.append('estado_sagrilaft', 'RECHAZADO');
+  fd.append('observaciones_julio', MOTIVO_RECHAZO);
+  try {
+    const r = await fetch(`${API}/sagrilaft/${id}/revision`, { method: 'PUT', body: fd });
+    if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || r.statusText);
+    toast('Registro rechazado', 'ok');
+    await cargar();
+  } catch (e) {
+    toast('Error: ' + e.message, 'err');
+    setBusy('btnRechazar', false);
   }
 }
 

@@ -151,8 +151,12 @@ def _calcular_evaluacion(data: dict) -> dict:
     neg = data.get("negocios_cerrados") or 0
     nivel = (data.get("nivel_estudios") or "").lower()
 
-    req_documento = bool(data.get("documento"))
-    req_rut = bool(data.get("url_rut"))   # viene de _attach_docs
+    tipo = (data.get("tipo_persona") or "natural").lower()
+    if tipo == "juridica":
+        req_documento = bool(data.get("url_camara_comercio"))  # Cámara de Comercio subida
+    else:
+        req_documento = bool(data.get("url_cedula"))           # Cédula subida
+    req_rut = bool(data.get("url_rut"))
     req_experiencia = anios >= 4
     todos_habilitantes = req_documento and req_rut and req_experiencia
 
@@ -293,45 +297,47 @@ def obtener_sagrilaft(sagrilaft_id: str):
 
 # ──────────────────────────────────────────────────────────────
 # PUT /sagrilaft/{id}/revision
-# Recibe el reporte tusdatos.co, lo sube y calcula la evaluación
-# GCOM-FT009 en un solo acto. El estado lo determina la evaluación.
+# Dos rutas:
+#   A) Con file_tusdatos → sube el PDF y calcula GCOM-FT009 automáticamente
+#   B) Con estado_sagrilaft → decisión manual de Julio (sin evaluación)
 # ──────────────────────────────────────────────────────────────
 @router.put("/{sagrilaft_id}/revision")
 async def revisar_sagrilaft(
     sagrilaft_id: str,
+    estado_sagrilaft: Optional[str] = Form(None),
     observaciones_julio: Optional[str] = Form(None),
-    file_tusdatos: UploadFile = File(...),
+    file_tusdatos: Optional[UploadFile] = File(None),
 ):
-    if not file_tusdatos.filename:
-        raise HTTPException(status_code=400, detail="El reporte de tusdatos.co es obligatorio")
+    tiene_archivo = bool(file_tusdatos and file_tusdatos.filename)
+    estado_manual = (estado_sagrilaft or "").upper() if estado_sagrilaft else None
 
-    # 1 — Subir reporte tusdatos.co a Storage
-    path = await _subir_archivo(file_tusdatos, f"sagrilaft/{sagrilaft_id}/tusdatos.pdf")
-    _guardar_docs(sagrilaft_id, {"url_tusdatos_report": path})
+    if not tiene_archivo and estado_manual not in ("APROBADO", "RECHAZADO"):
+        raise HTTPException(
+            status_code=400,
+            detail="Se requiere file_tusdatos o estado_sagrilaft (APROBADO/RECHAZADO)",
+        )
 
-    # 2 — Obtener el registro con todos los documentos (incluye el tusdatos recién subido)
-    get_resp = http.get(
-        f"{SUPABASE_URL}/rest/v1/{TABLE}",
-        headers=_headers(),
-        params={"id": f"eq.{sagrilaft_id}"},
-    )
-    get_resp.raise_for_status()
-    registros = get_resp.json()
-    if not registros:
-        raise HTTPException(status_code=404, detail="Registro SAGRILAFT no encontrado")
-    registro_con_docs = _attach_docs(registros)[0]
+    if tiene_archivo:
+        # ── Ruta A: evaluación automática con tusdatos ──────────────
+        path = await _subir_archivo(file_tusdatos, f"sagrilaft/{sagrilaft_id}/tusdatos.pdf")
+        _guardar_docs(sagrilaft_id, {"url_tusdatos_report": path})
 
-    # 3 — Calcular evaluación GCOM-FT009
-    evaluacion = _calcular_evaluacion(registro_con_docs)
-
-    # 4 — El estado lo determina exclusivamente la evaluación automática
-    estado = "APROBADO" if evaluacion["resultado_evaluacion"] == "APROBADO" else "RECHAZADO"
-
-    update = {
-        "estado_sagrilaft": estado,
-        "observaciones_julio": observaciones_julio,
-        **evaluacion,
-    }
+        get_resp = http.get(
+            f"{SUPABASE_URL}/rest/v1/{TABLE}",
+            headers=_headers(),
+            params={"id": f"eq.{sagrilaft_id}"},
+        )
+        get_resp.raise_for_status()
+        registros = get_resp.json()
+        if not registros:
+            raise HTTPException(status_code=404, detail="Registro SAGRILAFT no encontrado")
+        registro_con_docs = _attach_docs(registros)[0]
+        evaluacion = _calcular_evaluacion(registro_con_docs)
+        estado = "APROBADO" if evaluacion["resultado_evaluacion"] == "APROBADO" else "RECHAZADO"
+        update = {"estado_sagrilaft": estado, "observaciones_julio": observaciones_julio, **evaluacion}
+    else:
+        # ── Ruta B: decisión manual de Julio ────────────────────────
+        update = {"estado_sagrilaft": estado_manual, "observaciones_julio": observaciones_julio}
 
     resp = http.patch(
         f"{SUPABASE_URL}/rest/v1/{TABLE}",
@@ -340,7 +346,7 @@ async def revisar_sagrilaft(
         json=update,
     )
     if resp.status_code not in (200, 201):
-        raise HTTPException(status_code=500, detail=f"Error guardando evaluación: {resp.text}")
+        raise HTTPException(status_code=500, detail=f"Error guardando revisión: {resp.text}")
     data = resp.json()
     if not data:
         raise HTTPException(status_code=404, detail="Registro SAGRILAFT no encontrado")
