@@ -698,6 +698,7 @@ async function abrirDetalle(reg) {
         <div class="df"><span class="k">Es PEP</span><span class="v">${reg.es_pep===true?'Sí':reg.es_pep===false?'No':'—'}</span></div>
         <div class="df"><span class="k">Años experiencia</span><span class="v">${reg.anios_experiencia??'—'}</span></div>
         <div class="df"><span class="k">Negocios cerrados</span><span class="v">${reg.negocios_cerrados??'—'}</span></div>
+        <div class="df"><span class="k">Form. Inmobiliaria</span><span class="v">${fInmo(reg.formacion_inmobiliaria)}</span></div>
         <div class="df full"><span class="k">Origen de fondos</span><span class="v">${esc(reg.origen_fondos)||'—'}</span></div>
       </div>
     </div>
@@ -793,13 +794,14 @@ function renderEval(reg) {
 
       <div style="border-top:1px solid #bae6fd;margin:10px 0 8px;padding-top:8px;">
         <div class="eval-box-title">📊 Puntaje de Referencia</div>
-        ${sRow('Experiencia Comercial (30%)', reg.puntaje_experiencia, 30)}
-        ${sRow('Competencias Digitales (20%)', reg.puntaje_digital,    10)}
-        ${sRow('Desempeño Comercial (30%)',    reg.puntaje_desempeno,  30)}
+        ${sRow('Form. Inmobiliaria',          reg.puntaje_formacion_inmobiliaria, 30)}
+        ${sRow('Experiencia Comercial (30%)', reg.puntaje_experiencia,            30)}
+        ${sRow('Competencias Digitales (20%)',reg.puntaje_digital,                10)}
+        ${sRow('Desempeño Comercial (30%)',   reg.puntaje_desempeno,              30)}
         <div class="score-row" style="border-top:1px solid #bae6fd;margin-top:6px;padding-top:6px;">
           <span class="score-lbl" style="font-weight:700;color:var(--navy)">Total ponderado</span>
-          <div class="score-bar"><div class="score-fill" style="width:${Math.min(((reg.puntaje_total||0)/70)*100,100)}%;background:var(--navy)"></div></div>
-          <span class="score-pts" style="font-size:.82rem">${reg.puntaje_total ?? '—'} / 70</span>
+          <div class="score-bar"><div class="score-fill" style="width:${Math.min(((reg.puntaje_total||0)/100)*100,100)}%;background:var(--navy)"></div></div>
+          <span class="score-pts" style="font-size:.82rem">${reg.puntaje_total ?? '—'} / 90</span>
         </div>
       </div>
 
@@ -903,6 +905,14 @@ function fFecha(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
 }
+const INMO_LABEL = {
+  ninguna: 'Ninguna', curso_diplomado: 'Curso / Diplomado',
+  tecnico_inmobiliario: 'Técnico inmobiliario',
+  profesional_inmobiliario: 'Profesional inmobiliario',
+  posgrado_inmobiliario: 'Posgrado inmobiliario',
+};
+function fInmo(v) { return INMO_LABEL[v] || v || '—'; }
+
 function fCOP(v) {
   if (v === null || v === undefined || v === '') return '—';
   return new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', maximumFractionDigits:0 }).format(v);

@@ -20,6 +20,14 @@ TABLA_DOCS = "sagrilaft_documentos"
 
 TIPOS_DOC = ["rut", "cedula", "declaracion_renta", "camara_comercio", "composicion_accionaria", "tusdatos_report"]
 
+FORMACION_INMOBILIARIA_MAP = {
+    "ninguna":                  0,
+    "curso_diplomado":          5,
+    "tecnico_inmobiliario":    10,
+    "profesional_inmobiliario": 20,
+    "posgrado_inmobiliario":   30,
+}
+
 FORMACION_MAP = {
     "primaria": 20,
     "secundaria": 30,
@@ -158,17 +166,21 @@ def _calcular_evaluacion(data: dict) -> dict:
     req_tusdatos   = bool(data.get("url_tusdatos_report"))
     todos_habilitantes = req_documento and req_rut and req_experiencia and req_tusdatos
 
-    # Puntaje de referencia informativo (sin Formación Académica) — máx 80%
-    pts_exp = 100 if anios >= 25 else 75 if anios >= 15 else 50 if anios >= 4 else 0
-    pts_dig = 50  # base fija
-    pts_des = 100 if neg >= 30 else 80 if neg >= 20 else 60 if neg >= 10 else 40 if neg >= 5 else 20 if neg >= 1 else 0
+    # Puntaje de referencia informativo — máx 90 (30 Exp + 10 Dig + 30 Des + 20 Form.Inmo)
+    pts_exp  = 100 if anios >= 25 else 75 if anios >= 15 else 50 if anios >= 4 else 0
+    pts_dig  = 50  # base fija
+    pts_des  = 100 if neg >= 30 else 80 if neg >= 20 else 60 if neg >= 10 else 40 if neg >= 5 else 20 if neg >= 1 else 0
+    pts_inmo = FORMACION_INMOBILIARIA_MAP.get(
+        (data.get("formacion_inmobiliaria") or "ninguna").lower(), 0
+    )
 
     return {
-        "puntaje_experiencia": round(pts_exp * 0.30, 1),
-        "puntaje_digital":     round(pts_dig * 0.20, 1),
-        "puntaje_desempeno":   round(pts_des * 0.30, 1),
-        "puntaje_total":       round(pts_exp * 0.30 + pts_dig * 0.20 + pts_des * 0.30, 1),
-        "resultado_evaluacion": "APROBADO" if todos_habilitantes else "NO_APROBADO",
+        "puntaje_formacion_inmobiliaria": pts_inmo,
+        "puntaje_experiencia":            round(pts_exp * 0.30, 1),
+        "puntaje_digital":                round(pts_dig * 0.20, 1),
+        "puntaje_desempeno":              round(pts_des * 0.30, 1),
+        "puntaje_total":                  round(pts_inmo + pts_exp * 0.30 + pts_dig * 0.20 + pts_des * 0.30, 1),
+        "resultado_evaluacion":           "APROBADO" if todos_habilitantes else "NO_APROBADO",
     }
 
 
@@ -187,6 +199,7 @@ async def crear_sagrilaft(
     nivel_estudios: Optional[str] = Form(None),
     anios_experiencia: Optional[int] = Form(None),
     negocios_cerrados: Optional[int] = Form(None),
+    formacion_inmobiliaria: Optional[str] = Form(None),
     es_pep: Optional[bool] = Form(None),
     origen_fondos: Optional[str] = Form(None),
     ingresos: Optional[float] = Form(None),
@@ -228,6 +241,7 @@ async def crear_sagrilaft(
         "nivel_estudios": nivel_estudios,
         "anios_experiencia": anios_experiencia,
         "negocios_cerrados": negocios_cerrados,
+        "formacion_inmobiliaria": formacion_inmobiliaria,
         "es_pep": es_pep,
         "origen_fondos": origen_fondos,
         "ingresos": ingresos,

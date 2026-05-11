@@ -355,6 +355,15 @@
           <div class="grid-2">
             <div class="field-group"><label class="field-label">Años de experiencia comercial *</label><input type="number" id="n_aniosExp" name="n_aniosExp" min="0" max="60" placeholder="Ej: 8"/></div>
             <div class="field-group"><label class="field-label">Negocios cerrados (último año) *</label><input type="number" id="n_negociosCerrados" name="n_negociosCerrados" min="0" placeholder="Ej: 12"/></div>
+            <div class="field-group col-span-2"><label class="field-label">Formación Académica Inmobiliaria</label>
+              <select name="n_formacionInmobiliaria">
+                <option value="ninguna">Ninguna</option>
+                <option value="curso_diplomado">Curso / Diplomado</option>
+                <option value="tecnico_inmobiliario">Técnico inmobiliario</option>
+                <option value="profesional_inmobiliario">Profesional inmobiliario</option>
+                <option value="posgrado_inmobiliario">Posgrado inmobiliario</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -715,6 +724,15 @@
           <div class="grid-2">
             <div class="field-group"><label class="field-label">Años de la empresa en el mercado *</label><input type="number" id="j_aniosExp" name="j_aniosExp" min="0" placeholder="Ej: 10"/></div>
             <div class="field-group"><label class="field-label">Negocios cerrados (último año) *</label><input type="number" id="j_negociosCerrados" name="j_negociosCerrados" min="0" placeholder="Ej: 20"/></div>
+            <div class="field-group col-span-2"><label class="field-label">Formación Académica Inmobiliaria</label>
+              <select name="j_formacionInmobiliaria">
+                <option value="ninguna">Ninguna</option>
+                <option value="curso_diplomado">Curso / Diplomado</option>
+                <option value="tecnico_inmobiliario">Técnico inmobiliario</option>
+                <option value="profesional_inmobiliario">Profesional inmobiliario</option>
+                <option value="posgrado_inmobiliario">Posgrado inmobiliario</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -1097,6 +1115,7 @@ async function submitForm() {
 
     fd.append('anios_experiencia', document.getElementById('n_aniosExp')?.value || '0');
     fd.append('negocios_cerrados', document.getElementById('n_negociosCerrados')?.value || '0');
+    appendIf('formacion_inmobiliaria', '[name="n_formacionInmobiliaria"]');
     fd.append('es_pep', document.querySelector('input[name="n_esPep"]:checked')?.value === 'Sí' ? 'true' : 'false');
 
     // Archivos persona natural
@@ -1125,6 +1144,7 @@ async function submitForm() {
 
     fd.append('anios_experiencia', document.getElementById('j_aniosExp')?.value || '0');
     fd.append('negocios_cerrados', document.getElementById('j_negociosCerrados')?.value || '0');
+    appendIf('formacion_inmobiliaria', '[name="j_formacionInmobiliaria"]');
     fd.append('es_pep', document.querySelector('input[name="j_esPep"]:checked')?.value === 'Sí' ? 'true' : 'false');
 
     // Archivos persona jurídica
