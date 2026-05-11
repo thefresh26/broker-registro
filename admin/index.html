@@ -758,9 +758,7 @@ function renderEval(reg) {
     { label: 'Reporte tusdatos.co subido',       ok: !!reg.url_tusdatos_report },
   ];
   const todosOk = habs.every(h => h.ok);
-  const total   = reg.puntaje_total || 0;
-  const result  = reg.resultado_evaluacion || '—';
-  const esApro  = result === 'APROBADO';
+  const esApro  = todosOk;
 
   return `
   <div class="ds">
@@ -772,34 +770,10 @@ function renderEval(reg) {
           <span>${h.ok?'✅':'❌'}</span><span>${h.label}</span>
         </div>`).join('')}
 
-      <div style="border-top:1px solid #bae6fd;margin:10px 0 8px;padding-top:8px;">
-        <div class="eval-box-title">📊 Puntaje Ponderado</div>
-        ${sRow('Formación Académica (20%)',    reg.puntaje_formacion,  20)}
-        ${sRow('Experiencia Comercial (30%)',  reg.puntaje_experiencia,30)}
-        ${sRow('Competencias Digitales (20%)', reg.puntaje_digital,    10)}
-        ${sRow('Desempeño Comercial (30%)',    reg.puntaje_desempeno,  30)}
-      </div>
-
-      <div class="eval-total ${esApro?'eval-apro':'eval-noap'}">
-        ${esApro?'✅ APROBADO':'❌ NO APROBADO'} — Puntaje: ${total} / 90
-        ${!esApro ? `<br/><span style="font-size:.75rem;font-weight:500;">${
-          !todosOk
-            ? 'No cumple todos los requisitos habilitantes'
-            : `Puntaje insuficiente (${total}/90, se requiere ≥60)`
-        }</span>` : ''}
+      <div class="eval-total ${esApro?'eval-apro':'eval-noap'}" style="margin-top:10px;">
+        ${esApro ? '✅ APROBADO — Cumple todos los requisitos habilitantes' : '❌ NO APROBADO — No cumple todos los requisitos habilitantes'}
       </div>
     </div>
-  </div>`;
-}
-
-function sRow(label, pts, max) {
-  const v   = pts || 0;
-  const pct = max ? Math.min((v / max) * 100, 100) : 0;
-  return `
-  <div class="score-row">
-    <span class="score-lbl">${label}</span>
-    <div class="score-bar"><div class="score-fill" style="width:${pct}%"></div></div>
-    <span class="score-pts">${v}</span>
   </div>`;
 }
 

@@ -148,34 +148,20 @@ def _guardar_docs(sagrilaft_id: str, urls: dict) -> None:
 
 def _calcular_evaluacion(data: dict) -> dict:
     anios = data.get("anios_experiencia") or 0
-    neg = data.get("negocios_cerrados") or 0
-    nivel = (data.get("nivel_estudios") or "").lower()
 
     tipo = (data.get("tipo_persona") or "natural").lower()
     if tipo == "juridica":
-        req_documento = bool(data.get("url_camara_comercio"))  # Cámara de Comercio subida
+        req_documento = bool(data.get("url_camara_comercio"))
     else:
-        req_documento = bool(data.get("url_cedula"))           # Cédula subida
+        req_documento = bool(data.get("url_cedula"))
     req_rut = bool(data.get("url_rut"))
     req_experiencia = anios >= 4
-    todos_habilitantes = req_documento and req_rut and req_experiencia
+    req_tusdatos = bool(data.get("url_tusdatos_report"))
+    todos_habilitantes = req_documento and req_rut and req_experiencia and req_tusdatos
 
-    pts_form = FORMACION_MAP.get(nivel, 0)
-    pts_exp = 100 if anios >= 25 else 75 if anios >= 15 else 50 if anios >= 4 else 0
-    pts_dig = 50
-    pts_des = 100 if neg >= 30 else 80 if neg >= 20 else 60 if neg >= 10 else 40 if neg >= 5 else 20 if neg >= 1 else 0
+    resultado = "APROBADO" if todos_habilitantes else "NO_APROBADO"
 
-    total = round(pts_form * 0.20 + pts_exp * 0.30 + pts_dig * 0.20 + pts_des * 0.30, 1)
-    resultado = "APROBADO" if todos_habilitantes and total >= 60 else "NO_APROBADO"
-
-    return {
-        "puntaje_formacion": round(pts_form * 0.20, 1),
-        "puntaje_experiencia": round(pts_exp * 0.30, 1),
-        "puntaje_digital": round(pts_dig * 0.20, 1),
-        "puntaje_desempeno": round(pts_des * 0.30, 1),
-        "puntaje_total": total,
-        "resultado_evaluacion": resultado,
-    }
+    return {"resultado_evaluacion": resultado}
 
 
 # ──────────────────────────────────────────────────────────────
