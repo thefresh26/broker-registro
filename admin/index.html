@@ -647,10 +647,30 @@ async function abrirDetalle(reg) {
     if (r.ok) {
       const fresh = await r.json();
       actual = fresh;
-      // Actualizar también en el array local para que la tabla refleje el estado
       const idx = todos.findIndex(x => x.id === fresh.id);
       if (idx >= 0) todos[idx] = fresh;
       reg = fresh;
+
+      // Auto-sincronizar: si habilitantes y estado_sagrilaft no coinciden, actualizar BD
+      const esJuridica = reg.tipo_persona === 'juridica';
+      const anios = reg.anios_experiencia || 0;
+      const todosHab = (esJuridica ? !!reg.url_camara_comercio : !!reg.url_cedula)
+        && !!reg.url_rut
+        && anios >= 4
+        && !!reg.url_tusdatos_report;
+      const estadoEsperado = todosHab ? 'APROBADO' : 'RECHAZADO';
+
+      if ((reg.estado_sagrilaft === 'APROBADO' || reg.estado_sagrilaft === 'RECHAZADO')
+          && reg.estado_sagrilaft !== estadoEsperado) {
+        const syncR = await fetch(`${API}/sagrilaft/${reg.id}/sincronizar`, { method: 'PUT' });
+        if (syncR.ok) {
+          const synced = await syncR.json();
+          actual = synced;
+          if (idx >= 0) todos[idx] = synced;
+          reg = synced;
+          filtrar(); // re-renderiza la tabla y contador con el estado correcto
+        }
+      }
     }
   } catch (_) { /* usar datos existentes si el fetch falla */ }
 
@@ -758,7 +778,8 @@ function renderEval(reg) {
     { label: 'Reporte tusdatos.co subido',       ok: !!reg.url_tusdatos_report },
   ];
   const todosOk = habs.every(h => h.ok);
-  const esApro  = todosOk;
+  // El resultado final viene de la BD (estado_sagrilaft), no se recalcula localmente
+  const esApro  = reg.estado_sagrilaft === 'APROBADO';
 
   return `
   <div class="ds">

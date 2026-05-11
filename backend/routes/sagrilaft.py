@@ -340,6 +340,41 @@ async def revisar_sagrilaft(
 
 
 # ──────────────────────────────────────────────────────────────
+# PUT /sagrilaft/{id}/sincronizar
+# Re-evalúa los habilitantes actuales y actualiza estado_sagrilaft
+# automáticamente: todos ✅ → APROBADO, alguno ❌ → RECHAZADO
+# ──────────────────────────────────────────────────────────────
+@router.put("/{sagrilaft_id}/sincronizar")
+def sincronizar_evaluacion(sagrilaft_id: str):
+    get_resp = http.get(
+        f"{SUPABASE_URL}/rest/v1/{TABLE}",
+        headers=_headers(),
+        params={"id": f"eq.{sagrilaft_id}"},
+    )
+    get_resp.raise_for_status()
+    registros = get_resp.json()
+    if not registros:
+        raise HTTPException(status_code=404, detail="Registro SAGRILAFT no encontrado")
+
+    registro_con_docs = _attach_docs(registros)[0]
+    evaluacion = _calcular_evaluacion(registro_con_docs)
+    estado = "APROBADO" if evaluacion["resultado_evaluacion"] == "APROBADO" else "RECHAZADO"
+
+    resp = http.patch(
+        f"{SUPABASE_URL}/rest/v1/{TABLE}",
+        headers=_headers(prefer="return=representation"),
+        params={"id": f"eq.{sagrilaft_id}"},
+        json={"estado_sagrilaft": estado, **evaluacion},
+    )
+    if resp.status_code not in (200, 201):
+        raise HTTPException(status_code=500, detail=f"Error sincronizando estado: {resp.text}")
+    data = resp.json()
+    if not data:
+        raise HTTPException(status_code=404, detail="Registro SAGRILAFT no encontrado")
+    return _attach_docs(data)[0]
+
+
+# ──────────────────────────────────────────────────────────────
 # PUT /sagrilaft/{id}/evaluacion — recalcula GCOM-FT009
 # Solo ejecutable si estado_sagrilaft = APROBADO
 # ──────────────────────────────────────────────────────────────
