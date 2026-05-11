@@ -1174,6 +1174,21 @@ async function submitForm() {
       document.getElementById('successTitle').textContent = 'Registro Recibido';
       document.getElementById('successText').textContent = 'Su información fue enviada correctamente. El equipo de Activos por Colombia revisará su documentación y le notificará el resultado.';
       document.getElementById('overlaySuccess').style.display = 'flex';
+
+      // Resetear formulario y volver al paso 1
+      document.getElementById('mainForm').reset();
+      currentStep = 0;
+      setTipo('natural');
+      ['n_rut_name','n_cedula_name','j_rut_name','j_cedulaRL_name',
+       'j_compAccionaria_name','j_camaraComercio_name','j_declRenta_name'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = 'Subir documento';
+      });
+
+      // Cerrar overlay de éxito automáticamente después de 3 segundos
+      setTimeout(() => {
+        document.getElementById('overlaySuccess').style.display = 'none';
+      }, 3000);
     } else {
       const err = await res.json().catch(() => ({}));
       alert('Error al enviar: ' + (err.detail || res.statusText));
